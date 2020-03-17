@@ -13,6 +13,7 @@ import net.mamoe.mirai.console.graphical.view.VerificationCodeFragment
 import net.mamoe.mirai.console.plugins.PluginManager
 import net.mamoe.mirai.console.utils.MiraiConsoleUI
 import net.mamoe.mirai.utils.LoginSolver
+import net.mamoe.mirai.utils.SimpleLogger.LogPriority
 import tornadofx.*
 
 class MiraiGraphicalUIController : Controller(), MiraiConsoleUI {
@@ -38,6 +39,11 @@ class MiraiGraphicalUIController : Controller(), MiraiConsoleUI {
             0L -> mainLog.add(message)
             else -> cache[identity]?.logHistory?.add(message)
         }
+    }
+
+    // 修改interface之后用来暂时占位
+    override fun pushLog(priority: LogPriority, identityStr: String, identity: Long, message: String) {
+        this.pushLog(identity, message)
     }
 
     override fun prePushBot(identity: Long) = Platform.runLater {
