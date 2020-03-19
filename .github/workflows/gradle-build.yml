@@ -1,6 +1,8 @@
 name: Gradle CI
 
-on: [push, pull_request]
+on:
+  schedule:
+    - cron: 0 20 * * *
 
 jobs:
   build:
