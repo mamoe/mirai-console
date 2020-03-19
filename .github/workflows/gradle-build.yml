@@ -19,4 +19,4 @@ jobs:
     - name: 授予gradlew执行权限
       run: chmod +x gradlew
     - name: 用Gradle构建
-      run: ./gradlew build
+      run: ./gradlew shadowJar
