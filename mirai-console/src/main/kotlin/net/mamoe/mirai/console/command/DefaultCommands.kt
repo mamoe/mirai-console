@@ -78,7 +78,7 @@ object DefaultCommands {
     private fun String.property(): String? = System.getProperty(this)
 
     @JvmSynthetic
-    fun tryLoginAuto() {
+    internal fun tryLoginAuto() {
         // For java -Dmirai.account=10086 -Dmirai.password=Password -jar mirai-console-wrapper-X.jar
         val account = ("mirai.account".property() ?: return).toLong()
         val password = "mirai.password".property() ?: "mirai.passphrase".property() ?: "mirai.passwd".property()
@@ -130,7 +130,7 @@ object DefaultCommands {
                             MiraiConsole.logger("[Bot Manager]", 0, it[2] + " 不是一个ID")
                             return@onCommand false
                         }
-                        if (bot.addManagerWithResult(adminID)) {
+                        if (bot.addManager(adminID)) {
                             MiraiConsole.logger("[Bot Manager]", 0, it[2] + "增加成功")
                         } else {
                             MiraiConsole.logger("[Bot Manager]", 0, it[2] + "已经是一个manager了")
