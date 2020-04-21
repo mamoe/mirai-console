@@ -29,6 +29,7 @@ import java.util.*
  */
 
 object DefaultCommands {
+    private val commandPrefix = "mirai.command.prefix".property() ?: "/"
     private suspend fun CommandSender.login(account: Long, password: String) {
         MiraiConsole.logger("[Bot Login]", 0, "login...")
         try {
@@ -55,7 +56,7 @@ object DefaultCommands {
             }
             bot.login()
             bot.subscribeMessages {
-                startsWith("/") { message ->
+                startsWith(commandPrefix) { message ->
                     if (bot.checkManager(this.sender.id)) {
                         val sender = if (this is GroupMessage) {
                             GroupContactCommandSender(this.sender, this.subject)
@@ -83,8 +84,10 @@ object DefaultCommands {
         val account = ("mirai.account".property() ?: return).toLong()
         val password = "mirai.password".property() ?: "mirai.passphrase".property() ?: "mirai.passwd".property()
         if (password == null) {
-            MiraiConsole.logger.invoke(SimpleLogger.LogPriority.ERROR, "[AUTO LOGIN]", account,
-                "Find the account to be logged in, but no password specified")
+            MiraiConsole.logger.invoke(
+                SimpleLogger.LogPriority.ERROR, "[AUTO LOGIN]", account,
+                "Find the account to be logged in, but no password specified"
+            )
             return
         }
         GlobalScope.launch {
