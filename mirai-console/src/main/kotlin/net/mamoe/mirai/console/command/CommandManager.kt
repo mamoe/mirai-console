@@ -70,7 +70,7 @@ object CommandManager : Job by {
             registeredCommand[it] = command
         }
         if (commandOwner is PluginCommandOwner) {
-            pluginCommands.putIfAbsent(commandOwner.pluginBase, mutableSetOf())!!.add(command)
+            pluginCommands.computeIfAbsent(commandOwner.pluginBase) { mutableSetOf() }.add(command)
         }
     }
 
