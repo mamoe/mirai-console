@@ -78,7 +78,7 @@ mirai-console 内建 Jar 插件支持.
 [mirai-console插件开发快速上手](PluginDocs/ToStart.MD) 
 
 ### 自动登录
-**注: 自动登录不适用于Android**
+**注: 以下配置自动登录不适用于Android**
 
 编辑你的启动脚本，以Windows一键包的`运行pure`为例子
 ~~~
