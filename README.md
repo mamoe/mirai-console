@@ -76,3 +76,19 @@ mirai-console 内建 Jar 插件支持.
 
 (实验性) [插件中心](https://github.com/mamoe/mirai-plugins)  
 [mirai-console插件开发快速上手](PluginDocs/ToStart.MD) 
+
+### 自动登录
+**注: 自动登录不适用于Android**
+
+编辑你的启动脚本，以Windows一键包的`运行pure`为例子
+~~~
+.\jre\bin\java .....
+~~~
+然后，在`java`后插入以下内容
+` -Dmirai.account=你的账号 -Dmirai.password=你的密码`
+
+然后，现在的命令行看起来应该是这样的
+~~~
+.\jre\bin\java -Dmirai.account=你的账号 -Dmirai.password=你的密码 .....
+~~~
+**请注意空格**
