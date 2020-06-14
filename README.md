@@ -66,7 +66,7 @@ console 由后端和前端一起工作. 使用时必须选择一个前端.
 - 您也可以选择从以下repo中直接下载编译好的jar文件:
 - [mirai-repo](https://github.com/mamoe/mirai-repo) 
 - [mirai-api-http](https://github.com/mamoe/mirai-api-http/releases)
-- [mirai-console-wrapper](https://github.com/mamoe/mirai-console) (其功能是整合以上repo的jar包)
+- [mirai-console-wrapper](https://github.com/mamoe/mirai-console)
 ### 插件开发与获取
 
 mirai-console 内建 Jar 插件支持.
