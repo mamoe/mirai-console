@@ -63,7 +63,7 @@ console 由后端和前端一起工作. 使用时必须选择一个前端.
 2. 下载 `mirai-console-wrapper-x.x.x.jar`[下载地址](https://github.com/mamoe/mirai-console/releases)
 3. 参照 [wrapper 命令行参数](https://github.com/mirai/mirai-console-wrapper/README.md#命令行参数), 运行 `$ java -jar mirai-console-wrapper-x.x.x.jar`
  
-- 您也可以选择从以下repo中直接下载编译好的jar文件:
+- 您也可以选择从以下repo中手动下载编译好的jar文件:
 - [mirai-repo](https://github.com/mamoe/mirai-repo) 
 - [mirai-api-http](https://github.com/mamoe/mirai-api-http/releases)
 - [mirai-console-wrapper](https://github.com/mamoe/mirai-console)
