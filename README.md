@@ -54,15 +54,19 @@ console 由后端和前端一起工作. 使用时必须选择一个前端.
 
 **推荐使用 [LXY1226/MiraiOK](https://github.com/LXY1226/miraiOK) 一键启动器**
 
-使用 mirai-console-wrapper 启动器.
+#### 使用 mirai-console-wrapper 启动器.
 
 1. 安装 JRE (Java 运行环境):
    -  若使用图形界面, 至少需要 JRE 11 并带有 JavaFX 11, 且不推荐使用 12 或更高版本.
    -  若使用命令行或终端, 至少需要 JRE 8.
    -  可以在 [华为镜像源](https://repo.huaweicloud.com/java/jdk/) 下载 JDK 安装. (JDK 包含 JRE 和开发工具)
-2. 下载 `mirai-console-wrapper-x.x.x.jar`
+2. 下载 `mirai-console-wrapper-x.x.x.jar`[下载地址](https://github.com/mamoe/mirai-console/releases)
 3. 参照 [wrapper 命令行参数](https://github.com/mirai/mirai-console-wrapper/README.md#命令行参数), 运行 `$ java -jar mirai-console-wrapper-x.x.x.jar`
-
+ 
+- 您也可以选择从以下repo中直接下载编译好的jar文件:
+- [mirai-repo](https://github.com/mamoe/mirai-repo) 
+- [mirai-api-http](https://github.com/mamoe/mirai-api-http/releases)
+- [mirai-console-wrapper](https://github.com/mamoe/mirai-console) (其功能是整合以上repo的jar包)
 ### 插件开发与获取
 
 mirai-console 内建 Jar 插件支持.
