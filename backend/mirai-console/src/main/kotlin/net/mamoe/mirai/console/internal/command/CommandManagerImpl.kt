@@ -74,7 +74,7 @@ internal object CommandManagerImpl : CommandManager, CoroutineScope by Coroutine
                     // [MessageSource] [N of Empty PlainText (worst)] [At(BotSelector)][Command (need trim-left)]
                     val result = ArrayList(message)
                     val iterator = result.iterator()
-                    // Remove ( [N of Empty PlainText(worst)] [At] )
+                    // Remove ( [N of Empty PlainText (worst)] [BotSelector] )
                     looping@ while (iterator.hasNext()) {
                         when (iterator.next()) {
                             is MessageSource -> {
@@ -87,7 +87,7 @@ internal object CommandManagerImpl : CommandManager, CoroutineScope by Coroutine
                             }
                             is At -> {
                                 // Remove the bot selector, then stop removing.
-                                // The first At is the latest element in this step.
+                                // The first At(BotSelector) is the last element to delete in this step.
                                 iterator.remove()
                                 break@looping
                             }
