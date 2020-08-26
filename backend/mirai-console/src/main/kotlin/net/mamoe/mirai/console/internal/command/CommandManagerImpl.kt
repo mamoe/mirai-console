@@ -61,35 +61,55 @@ internal object CommandManagerImpl : CommandManager, CoroutineScope by Coroutine
             val sender = this.toCommandSender()
             // starting parsing
             val cmd = kotlin.run {
-                val iterator = message.iterator()
-                val command = ArrayList<SingleMessage>()
-                while (iterator.hasNext()) {
-                    val nextContent = iterator.next()
-                    if (nextContent is MessageSource) {
-                        command.add(nextContent)
-                        continue
-                    } else if (nextContent is PlainText) {
-                        if (nextContent.content.trim().isEmpty()) {
-                            continue
-                        }
-                    } else if (nextContent is At) {
-                        // Selecting bot
-                        val account = nextContent.target
-                        if (account != bot.id) {
-                            // Bot not match
-                            return@subscribeAlways
-                        }
-                        if (!iterator.hasNext()) return@run EmptyMessageChain
-                        val nextNext = iterator.next()
-                        if (nextNext is PlainText) {
-                            command.add(PlainText(nextNext.content.trimStart()))
-                        } else {
-                            command.add(nextNext)
-                        }
-                        iterator.forEach { command.add(it) }
-                        return@run command.asMessageChain()
+                val botSelector = message.asSequence()
+                    .filterIsInstance<MessageContent>()
+                    // Skip all space before At(bot)(BotSelector)
+                    .filter { it !is PlainText || it.content.trim().isNotEmpty() }
+                    .firstOrNull()
+                if (botSelector is At) {
+                    if (botSelector.target != bot.id) {
+                        // Selector target not match.
+                        return@subscribeAlways
                     }
-                    return@run message
+                    // [MessageSource] [N of Empty PlainText (worst)] [At(BotSelector)][Command (need trim-left)]
+                    val result = ArrayList(message)
+                    val iterator = result.iterator()
+                    // Remove ( [N of Empty PlainText(worst)] [At] )
+                    looping@ while (iterator.hasNext()) {
+                        when (iterator.next()) {
+                            is MessageSource -> {
+                                // Skip
+                            }
+                            is PlainText -> {
+                                // Remove empty placeholders before BotSelector
+                                // The previous logic layer has determined that these PlainText are all empty
+                                iterator.remove()
+                            }
+                            is At -> {
+                                // Remove the bot selector, then stop removing.
+                                // The first At is the latest element in this step.
+                                iterator.remove()
+                                break@looping
+                            }
+                        }
+                    }
+                    // Trim-left the command.
+                    looping@ for (i in result.indices) {
+                        when (val content = result[i]) {
+                            is MessageSource -> {
+                                // Skip
+                            }
+                            is PlainText -> {
+                                // trim-left the first plain text
+                                result[i] = PlainText(content.content.trimStart())
+                                // Trim-left finished. Quit the loop.
+                                break@looping
+                            }
+                            // Command Message Chain's left side has no space.
+                            else -> break@looping
+                        }
+                    }
+                    return@run result.asMessageChain()
                 }
                 message
             }
