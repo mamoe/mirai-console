@@ -18,8 +18,7 @@ import net.mamoe.mirai.console.command.Command.Companion.primaryName
 import net.mamoe.mirai.event.Listener
 import net.mamoe.mirai.event.subscribeAlways
 import net.mamoe.mirai.message.MessageEvent
-import net.mamoe.mirai.message.data.MessageChain
-import net.mamoe.mirai.message.data.MessageContent
+import net.mamoe.mirai.message.data.*
 import net.mamoe.mirai.utils.MiraiLogger
 import java.util.concurrent.locks.ReentrantLock
 
@@ -60,8 +59,41 @@ internal object CommandManagerImpl : CommandManager, CoroutineScope by Coroutine
             priority = Listener.EventPriority.HIGH
         ) {
             val sender = this.toCommandSender()
-
-            when (val result = sender.executeCommand(message)) {
+            // starting parsing
+            val cmd = kotlin.run {
+                val iterator = message.iterator()
+                val command = ArrayList<SingleMessage>()
+                while (iterator.hasNext()) {
+                    val nextContent = iterator.next()
+                    if (nextContent is MessageSource) {
+                        command.add(nextContent)
+                        continue
+                    } else if (nextContent is PlainText) {
+                        if (nextContent.content.trim().isEmpty()) {
+                            continue
+                        }
+                    } else if (nextContent is At) {
+                        // Selecting bot
+                        val account = nextContent.target
+                        if (account != bot.id) {
+                            // Bot not match
+                            return@subscribeAlways
+                        }
+                        if (!iterator.hasNext()) return@run EmptyMessageChain
+                        val nextNext = iterator.next()
+                        if (nextNext is PlainText) {
+                            command.add(PlainText(nextNext.content.trimStart()))
+                        } else {
+                            command.add(nextNext)
+                        }
+                        iterator.forEach { command.add(it) }
+                        return@run command.asMessageChain()
+                    }
+                    return@run message
+                }
+                message
+            }
+            when (val result = sender.executeCommand(cmd)) {
                 is CommandExecuteResult.PermissionDenied -> {
                     if (!result.command.prefixOptional) {
                         sender.sendMessage("权限不足")
