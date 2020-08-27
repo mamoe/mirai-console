@@ -15,6 +15,8 @@ import kotlinx.coroutines.CoroutineScope
 import net.mamoe.mirai.console.MiraiConsole
 import net.mamoe.mirai.console.command.*
 import net.mamoe.mirai.console.command.Command.Companion.primaryName
+import net.mamoe.mirai.console.internal.util.dropWhileWithFilter
+import net.mamoe.mirai.console.internal.util.mapFirst
 import net.mamoe.mirai.event.Listener
 import net.mamoe.mirai.event.subscribeAlways
 import net.mamoe.mirai.message.MessageEvent
@@ -64,7 +66,7 @@ internal object CommandManagerImpl : CommandManager, CoroutineScope by Coroutine
                 val botSelector = message.asSequence()
                     .filterIsInstance<MessageContent>()
                     // Skip all space before At(bot)(BotSelector)
-                    .filter { it !is PlainText || it.content.trim().isNotEmpty() }
+                    .filter { it !is PlainText || it.content.isNotBlank() }
                     .firstOrNull()
                 if (botSelector is At) {
                     if (botSelector.target != bot.id) {
@@ -72,44 +74,35 @@ internal object CommandManagerImpl : CommandManager, CoroutineScope by Coroutine
                         return@subscribeAlways
                     }
                     // [MessageSource] [N of Empty PlainText (worst)] [At(BotSelector)][Command (need trim-left)]
-                    val result = ArrayList(message)
-                    val iterator = result.iterator()
-                    // Remove ( [N of Empty PlainText (worst)] [BotSelector] )
-                    looping@ while (iterator.hasNext()) {
-                        when (iterator.next()) {
-                            is MessageSource -> {
-                                // Skip
+                    return@run message.asSequence()
+                        // Drop [N of Empty PlainText (worst)]
+                        .dropWhileWithFilter(
+                            filter = { it is MessageContent },
+                            predicate = {
+                                when (it) {
+                                    is PlainText -> true
+                                    is At -> null
+                                    else -> false
+                                }
                             }
-                            is PlainText -> {
-                                // Remove empty placeholders before BotSelector
-                                // The previous logic layer has determined that these PlainText are all empty
-                                iterator.remove()
+                        )
+                        // Trim-left
+                        .mapFirst(
+                            predicate = { it is MessageContent },
+                            transform = {
+                                if (it is PlainText)
+                                    PlainText(it.content.trimStart())
+                                else it
                             }
-                            is At -> {
-                                // Remove the bot selector, then stop removing.
-                                // The first At(BotSelector) is the last element to delete in this step.
-                                iterator.remove()
-                                break@looping
-                            }
+                        )
+                        .dropWhileWithFilter(
+                            filter = { it is MessageContent },
+                            predicate = { it is PlainText && it.content.isBlank() }
+                        )
+                        .toList().also { list ->
+                            println(list)
                         }
-                    }
-                    // Trim-left the command.
-                    looping@ for (i in result.indices) {
-                        when (val content = result[i]) {
-                            is MessageSource -> {
-                                // Skip
-                            }
-                            is PlainText -> {
-                                // trim-left the first plain text
-                                result[i] = PlainText(content.content.trimStart())
-                                // Trim-left finished. Quit the loop.
-                                break@looping
-                            }
-                            // Command Message Chain's left side has no space.
-                            else -> break@looping
-                        }
-                    }
-                    return@run result.asMessageChain()
+                        .asMessageChain()
                 }
                 message
             }
