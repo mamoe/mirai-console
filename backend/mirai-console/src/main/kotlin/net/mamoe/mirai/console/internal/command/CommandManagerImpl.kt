@@ -67,7 +67,7 @@ internal object CommandManagerImpl : CommandManager, CoroutineScope by Coroutine
         ) {
             val sender = this.toCommandSender()
             // starting parsing
-            val cmd = kotlin.run {
+            fun parseCommandArguments():Message? {
                 val botSelector = message.asSequence()
                     .filterIsInstance<MessageContent>()
                     // Skip all space before At(bot)(BotSelector)
@@ -76,10 +76,10 @@ internal object CommandManagerImpl : CommandManager, CoroutineScope by Coroutine
                 if (botSelector is At) {
                     if (botSelector.target != bot.id) {
                         // Selector target not match.
-                        return@subscribeAlways
+                        return null
                     }
                     // [MessageSource] [N of Empty PlainText (worst)] [At(BotSelector)][Command (need trim-left)]
-                    return@run message.asSequence()
+                    return message.asSequence()
                         // Drop [N of Empty PlainText (worst)]
                         .dropWhileWithFilter(
                             filter = { it is MessageContent },
@@ -109,9 +109,11 @@ internal object CommandManagerImpl : CommandManager, CoroutineScope by Coroutine
                         }
                         .asMessageChain()
                 }
-                message
+                return message
             }
-            when (val result = sender.executeCommand(cmd)) {
+            when (val result = sender.executeCommand(
+                parseCommandArguments() ?: return@subscribeAlways
+            )) {
                 is CommandExecuteResult.PermissionDenied -> {
                     if (!result.command.prefixOptional) {
                         sender.sendMessage("权限不足")
