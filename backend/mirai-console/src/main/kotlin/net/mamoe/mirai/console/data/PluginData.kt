@@ -11,7 +11,7 @@
     "INVISIBLE_REFERENCE",
     "INVISIBLE_MEMBER",
     "EXPOSED_SUPER_CLASS",
-    "NOTHING_TO_INLINE", "unused"
+    "NOTHING_TO_INLINE", "unused", "UNCHECKED_CAST"
 )
 @file:JvmName("PluginDataKt")
 
@@ -23,7 +23,6 @@ import net.mamoe.mirai.console.internal.data.*
 import net.mamoe.mirai.console.plugin.jvm.JvmPlugin
 import net.mamoe.mirai.console.plugin.jvm.reloadPluginData
 import net.mamoe.mirai.console.util.ConsoleExperimentalAPI
-import net.mamoe.mirai.console.util.ConsoleInternalAPI
 import kotlin.internal.LowPriorityInOverloadResolution
 import kotlin.reflect.KClass
 import kotlin.reflect.KProperty
@@ -51,7 +50,7 @@ import kotlin.reflect.full.findAnnotation
  *
  * object MyPluginData : AutoSavePluginData() {
  *    var list: MutableList<String> by value(mutableListOf("a", "b")) // mutableListOf("a", "b") 是初始值, 可以省略
- *    val custom: Map<Long, CustomData> by value() // 使用 kotlinx-serialization 序列化的类型. (目前还不支持)
+ *    val custom: Map<Long, CustomData> by value() // 使用 kotlinx-serialization 序列化的类型.
  *    var long: Long by value(0) // 允许 var
  *    var int by value(0) // 可以使用类型推断, 但更推荐使用 `var long: Long by value(0)` 这种定义方式.
  *
@@ -59,7 +58,7 @@ import kotlin.reflect.full.findAnnotation
  *    val botToLongMap: MutableMap<Bot, Long> by value<MutableMap<Long, Long>>().mapKeys(Bot::getInstance, Bot::id)
  * }
  *
- * @Serializable
+ * @Serializable // kotlinx.serialization: https://github.com/Kotlin/kotlinx.serialization
  * data class CustomData(
  *     // ...
  * )
@@ -96,7 +95,9 @@ import kotlin.reflect.full.findAnnotation
  * newList.add(1) // 不会添加到 MyPluginData.nestedMap 中, 因为 `mutableListOf` 创建的 MutableList 被非引用地添加进了 MyPluginData.nestedMap
  * ```
  *
- * 一个解决方案是对 [SerializerAwareValue] 做映射或相关修改. 如 [PluginDataExtensions]
+ * 一个解决方案是对 [SerializerAwareValue] 做映射或相关修改. 如 [PluginDataExtensions]。
+ *
+ * 要查看详细的解释，请查看 [docs/PluginData.md](https://github.com/mamoe/mirai-console/blob/master/docs/PluginData.md)
  *
  * @see JvmPlugin.reloadPluginData 通过 [JvmPlugin] 获取指定 [PluginData] 实例.
  * @see PluginDataStorage [PluginData] 存储仓库
@@ -111,7 +112,6 @@ public interface PluginData {
      * @see provideDelegate
      * @see track
      */
-    @ConsoleExperimentalAPI
     public val valueNodes: MutableList<ValueNode<*>>
 
     /**
@@ -129,6 +129,7 @@ public interface PluginData {
     /**
      * 由 [provideDelegate] 创建, 来自一个通过 `by value` 初始化的属性节点.
      */
+    @ConsoleExperimentalAPI
     public data class ValueNode<T>(
         /**
          * 节点名称.
@@ -142,11 +143,12 @@ public interface PluginData {
          */
         val value: Value<out T>,
         /**
-         * 属性值更新器
-         *
-         * @suppress 注意, 这是实验性 API.
+         * 注解列表
          */
-        @ConsoleExperimentalAPI
+        val annotations: List<Annotation>,
+        /**
+         * 属性值更新器
+         */
         val updaterSerializer: KSerializer<Unit>
     )
 
@@ -156,12 +158,11 @@ public interface PluginData {
     public operator fun <T : SerializerAwareValue<*>> T.provideDelegate(
         thisRef: Any?,
         property: KProperty<*>
-    ): T = track(property.valueName)
+    ): T = track(property.valueName, property.getAnnotationListForValueSerialization())
 
     /**
      * 供手动实现时值跟踪使用 (如 Java 用户). 一般 Kotlin 用户需使用 [provideDelegate]
      */
-    @ConsoleExperimentalAPI
     public fun <T : SerializerAwareValue<*>> T.track(
         /**
          * 值名称.
@@ -171,7 +172,8 @@ public interface PluginData {
          *
          * @see [ValueNode.value]
          */
-        valueName: String
+        valueName: String,
+        annotations: List<Annotation>
     ): T
 
     /**
@@ -179,20 +181,18 @@ public interface PluginData {
      *
      * @suppress 注意, 这是实验性 API.
      */
-    @ConsoleExperimentalAPI
     public val updaterSerializer: KSerializer<Unit>
 
     /**
      * 当所属于这个 [PluginData] 的 [Value] 的 [值][Value.value] 被修改时被调用.
      */
-    @ConsoleInternalAPI
     public fun onValueChanged(value: Value<*>)
 
     /**
      * 当这个 [PluginData] 被放入一个 [PluginDataStorage] 时调用
      */
-    @ConsoleInternalAPI
-    public fun onStored(owner: PluginDataHolder, storage: PluginDataStorage)
+    @ConsoleExperimentalAPI
+    public fun onInit(owner: PluginDataHolder, storage: PluginDataStorage)
 }
 
 /**
@@ -209,7 +209,6 @@ public interface PluginData {
  *
  * @see PluginData
  */
-@Suppress("UNCHECKED_CAST")
 public fun <T> PluginData.findBackingFieldValue(property: KProperty<T>): Value<out T>? =
     findBackingFieldValue(property.valueName)
 
@@ -230,7 +229,6 @@ public fun <T> PluginData.findBackingFieldValue(property: KProperty<T>): Value<o
  *
  * @see PluginData
  */
-@Suppress("UNCHECKED_CAST")
 public fun <T> PluginData.findBackingFieldValue(propertyValueName: String): Value<out T>? {
     return this.valueNodes.find { it.valueName == propertyValueName }?.value as Value<T>
 }
@@ -250,25 +248,11 @@ public fun <T> PluginData.findBackingFieldValue(propertyValueName: String): Valu
  *
  * @see PluginData
  */
-@Suppress("UNCHECKED_CAST")
 public fun <T> PluginData.findBackingFieldValueNode(property: KProperty<T>): PluginData.ValueNode<out T>? {
     return this.valueNodes.find { it == property } as PluginData.ValueNode<out T>?
 }
 
-/**
- * 用于支持属性委托
- */
-@JvmSynthetic
-public inline operator fun <T> Value<T>.getValue(thisRef: Any?, property: KProperty<*>): T = value
-
-/**
- * 用于支持属性委托
- */
-@JvmSynthetic
-public inline operator fun <T> Value<T>.setValue(thisRef: Any?, property: KProperty<*>, value: T) {
-    this.value = value
-}
-
+// don't default = 0, cause ambiguity
 //// region PluginData_value_primitives CODEGEN ////
 
 /**
@@ -330,16 +314,19 @@ public fun PluginData.value(default: String): SerializerAwareValue<String> = val
  */
 @Suppress("UNCHECKED_CAST")
 @LowPriorityInOverloadResolution
-public inline fun <reified T> PluginData.value(default: T): SerializerAwareValue<T> =
-    valueFromKType(typeOf0<T>(), default)
+public inline fun <reified T> PluginData.value(
+    default: T,
+    crossinline apply: T.() -> Unit = {}
+): SerializerAwareValue<T> =
+    valueFromKType(typeOf0<T>(), default).also { it.value.apply() }
 
 /**
  * 通过具体化类型创建一个 [SerializerAwareValue].
  * @see valueFromKType 查看更多实现信息
  */
 @LowPriorityInOverloadResolution
-public inline fun <reified T> PluginData.value(): SerializerAwareValue<T> =
-    valueImpl(typeOf0<T>(), T::class)
+public inline fun <reified T> PluginData.value(apply: T.() -> Unit = {}): SerializerAwareValue<T> =
+    valueImpl<T>(typeOf0<T>(), T::class).also { it.value.apply() }
 
 @Suppress("UNCHECKED_CAST")
 @PublishedApi
@@ -362,5 +349,3 @@ internal fun <T> PluginData.valueImpl(type: KType, classifier: KClass<*>): Seria
 @ConsoleExperimentalAPI
 public fun <T> PluginData.valueFromKType(type: KType, default: T): SerializerAwareValue<T> =
     (valueFromKTypeImpl(type) as SerializerAwareValue<Any?>).apply { this.value = default } as SerializerAwareValue<T>
-
-// TODO: 2020/6/24 Introduce class TypeToken for compound types for Java.

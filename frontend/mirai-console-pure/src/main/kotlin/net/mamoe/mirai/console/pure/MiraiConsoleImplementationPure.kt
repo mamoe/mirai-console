@@ -23,23 +23,21 @@ package net.mamoe.mirai.console.pure
 
 
 import com.vdurmont.semver4j.Semver
-import kotlinx.coroutines.CoroutineScope
-import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.SupervisorJob
-import kotlinx.coroutines.withContext
+import kotlinx.coroutines.*
 import net.mamoe.mirai.console.ConsoleFrontEndImplementation
 import net.mamoe.mirai.console.MiraiConsole
 import net.mamoe.mirai.console.MiraiConsoleFrontEndDescription
 import net.mamoe.mirai.console.MiraiConsoleImplementation
-import net.mamoe.mirai.console.command.ConsoleCommandSender
 import net.mamoe.mirai.console.data.MultiFilePluginDataStorage
 import net.mamoe.mirai.console.data.PluginDataStorage
 import net.mamoe.mirai.console.plugin.DeferredPluginLoader
 import net.mamoe.mirai.console.plugin.PluginLoader
 import net.mamoe.mirai.console.plugin.jvm.JarPluginLoader
 import net.mamoe.mirai.console.pure.ConsoleInputImpl.requestInput
+import net.mamoe.mirai.console.util.ConsoleExperimentalAPI
 import net.mamoe.mirai.console.util.ConsoleInput
 import net.mamoe.mirai.console.util.ConsoleInternalAPI
+import net.mamoe.mirai.console.util.NamedSupervisorJob
 import net.mamoe.mirai.utils.*
 import org.fusesource.jansi.Ansi
 import org.jline.reader.LineReader
@@ -60,29 +58,32 @@ import java.util.*
  *
  * @see MiraiConsolePureLoader CLI 入口点
  */
-internal class MiraiConsoleImplementationPure
+@ConsoleExperimentalAPI
+class MiraiConsoleImplementationPure
 @JvmOverloads constructor(
     override val rootPath: Path = Paths.get("."),
     override val builtInPluginLoaders: List<PluginLoader<*, *>> = Collections.unmodifiableList(
         listOf(DeferredPluginLoader { JarPluginLoader })
     ),
     override val frontEndDescription: MiraiConsoleFrontEndDescription = ConsoleFrontEndDescImpl,
-    override val consoleCommandSender: ConsoleCommandSender = ConsoleCommandSenderImpl,
+    override val consoleCommandSender: MiraiConsoleImplementation.ConsoleCommandSenderImpl = ConsoleCommandSenderImplPure,
     override val dataStorageForJarPluginLoader: PluginDataStorage = MultiFilePluginDataStorage(rootPath.resolve("data")),
     override val dataStorageForBuiltIns: PluginDataStorage = MultiFilePluginDataStorage(rootPath.resolve("data")),
     override val configStorageForJarPluginLoader: PluginDataStorage = MultiFilePluginDataStorage(rootPath.resolve("config")),
     override val configStorageForBuiltIns: PluginDataStorage = MultiFilePluginDataStorage(rootPath.resolve("config"))
-) : MiraiConsoleImplementation, CoroutineScope by CoroutineScope(SupervisorJob()) {
-    override val mainLogger: MiraiLogger by lazy {
-        MiraiConsole.newLogger("main")
-    }
+) : MiraiConsoleImplementation, CoroutineScope by CoroutineScope(
+    NamedSupervisorJob("MiraiConsoleImplementationPure") +
+            CoroutineExceptionHandler { coroutineContext, throwable ->
+                val coroutineName = coroutineContext[CoroutineName]?.name ?: "<unnamed>"
+                MiraiConsole.mainLogger.error("Exception in coroutine $coroutineName", throwable)
+            }) {
     override val consoleInput: ConsoleInput get() = ConsoleInputImpl
 
     override fun createLoginSolver(requesterBot: Long, configuration: BotConfiguration): LoginSolver {
         return DefaultLoginSolver(input = { requestInput("LOGIN> ") })
     }
 
-    override fun newLogger(identity: String?): MiraiLogger = LoggerCreator(identity)
+    override fun createLogger(identity: String?): MiraiLogger = LoggerCreator(identity)
 
     init {
         with(rootPath.toFile()) {

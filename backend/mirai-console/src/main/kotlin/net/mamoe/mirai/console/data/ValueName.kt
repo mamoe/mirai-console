@@ -14,7 +14,6 @@ package net.mamoe.mirai.console.data
  *
  * 例:
  * ```
- * @ValueName("accounts")
  * object AccountPluginData : PluginData by ... {
  *    @ValueName("info")
  *    val map: Map<String, String> by value("a" to "b")
@@ -23,11 +22,11 @@ package net.mamoe.mirai.console.data
  *
  * 将被保存为配置 (YAML 作为示例):
  * ```yaml
- * accounts:
- *   info:
+ * AccountPluginData:
+ *   map:
  *     a: b
  * ```
  */
 @Target(AnnotationTarget.PROPERTY, AnnotationTarget.CLASS)
-@Retention(AnnotationRetention.BINARY)
+@Retention(AnnotationRetention.RUNTIME)
 public annotation class ValueName(val value: String)

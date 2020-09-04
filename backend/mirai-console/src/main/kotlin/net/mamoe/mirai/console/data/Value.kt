@@ -17,6 +17,8 @@ import kotlinx.serialization.StringFormat
 import net.mamoe.mirai.console.internal.data.map
 import net.mamoe.mirai.console.internal.data.setValueBySerializer
 import net.mamoe.mirai.console.util.ConsoleExperimentalAPI
+import kotlin.properties.ReadWriteProperty
+import kotlin.reflect.KProperty
 
 /**
  * 表示一个值代理.
@@ -30,10 +32,18 @@ import net.mamoe.mirai.console.util.ConsoleExperimentalAPI
  * @see PrimitiveValue 基础数据类型实现
  * @see CompositeValue 复合数据类型实现
  */
-public interface Value<T> {
+public interface Value<T> : ReadWriteProperty<Any?, T> {
     @get:JvmName("get")
     @set:JvmName("set")
     public var value: T
+
+    @JvmSynthetic // avoid ambiguity with property `value`
+    public override operator fun getValue(thisRef: Any?, property: KProperty<*>): T = value
+
+    @JvmSynthetic
+    public override operator fun setValue(thisRef: Any?, property: KProperty<*>, value: T) {
+        this.value = value
+    }
 }
 
 /**
@@ -135,34 +145,42 @@ public interface PrimitiveValue<T> : Value<T>
  * 表示一个不可空 [Byte] [Value].
  */
 public interface ByteValue : PrimitiveValue<Byte>
+
 /**
  * 表示一个不可空 [Short] [Value].
  */
 public interface ShortValue : PrimitiveValue<Short>
+
 /**
  * 表示一个不可空 [Int] [Value].
  */
 public interface IntValue : PrimitiveValue<Int>
+
 /**
  * 表示一个不可空 [Long] [Value].
  */
 public interface LongValue : PrimitiveValue<Long>
+
 /**
  * 表示一个不可空 [Float] [Value].
  */
 public interface FloatValue : PrimitiveValue<Float>
+
 /**
  * 表示一个不可空 [Double] [Value].
  */
 public interface DoubleValue : PrimitiveValue<Double>
+
 /**
  * 表示一个不可空 [Char] [Value].
  */
 public interface CharValue : PrimitiveValue<Char>
+
 /**
  * 表示一个不可空 [Boolean] [Value].
  */
 public interface BooleanValue : PrimitiveValue<Boolean>
+
 /**
  * 表示一个不可空 [String] [Value].
  */
@@ -189,6 +207,7 @@ public interface ListValue<E> : CompositeValue<List<E>>
  *
  * @param E 不是基础数据类型
  */
+@ConsoleExperimentalAPI
 public interface CompositeListValue<E> : ListValue<E>
 
 /**
@@ -196,12 +215,16 @@ public interface CompositeListValue<E> : ListValue<E>
  *
  * @param E 是基础类型
  */
+@ConsoleExperimentalAPI
 public interface PrimitiveListValue<E> : ListValue<E>
 
 
 //// region PrimitiveListValue CODEGEN ////
 
+@ConsoleExperimentalAPI
 public interface PrimitiveIntListValue : PrimitiveListValue<Int>
+
+@ConsoleExperimentalAPI
 public interface PrimitiveLongListValue : PrimitiveListValue<Long>
 // TODO + codegen
 
@@ -212,24 +235,30 @@ public interface PrimitiveLongListValue : PrimitiveListValue<Long>
  * @see [CompositeSetValue]
  * @see [PrimitiveSetValue]
  */
+@ConsoleExperimentalAPI
 public interface SetValue<E> : CompositeValue<Set<E>>
 
 /**
  * 复合数据类型 [Set]
  * @param E 是基础数据类型
  */
+@ConsoleExperimentalAPI
 public interface CompositeSetValue<E> : SetValue<E>
 
 /**
  * 基础数据类型 [Set]
  * @param E 是基础数据类型
  */
+@ConsoleExperimentalAPI
 public interface PrimitiveSetValue<E> : SetValue<E>
 
 
 //// region PrimitiveSetValue CODEGEN ////
 
+@ConsoleExperimentalAPI
 public interface PrimitiveIntSetValue : PrimitiveSetValue<Int>
+
+@ConsoleExperimentalAPI
 public interface PrimitiveLongSetValue : PrimitiveSetValue<Long>
 // TODO + codegen
 
@@ -252,17 +281,15 @@ public interface PrimitiveMapValue<K, V> : MapValue<K, V>
 
 //// region PrimitiveMapValue CODEGEN ////
 
+@ConsoleExperimentalAPI
 public interface PrimitiveIntIntMapValue : PrimitiveMapValue<Int, Int>
+
+@ConsoleExperimentalAPI
 public interface PrimitiveIntLongMapValue : PrimitiveMapValue<Int, Long>
 // TODO + codegen
 
 //// endregion PrimitiveSetValue CODEGEN ////
 
 
-
-
-
-
-
-
-
+@ConsoleExperimentalAPI
+public interface ReferenceValue<T> : Value<T>

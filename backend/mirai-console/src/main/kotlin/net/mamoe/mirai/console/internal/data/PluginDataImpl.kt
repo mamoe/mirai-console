@@ -12,7 +12,7 @@
 package net.mamoe.mirai.console.internal.data
 
 import kotlinx.serialization.KSerializer
-import kotlinx.serialization.builtins.MapSerializer
+import kotlinx.serialization.SerialName
 import kotlinx.serialization.builtins.serializer
 import kotlinx.serialization.descriptors.SerialDescriptor
 import kotlinx.serialization.encoding.CompositeDecoder
@@ -21,7 +21,12 @@ import kotlinx.serialization.encoding.Encoder
 import net.mamoe.mirai.console.data.PluginData
 import net.mamoe.mirai.console.data.PluginData.ValueNode
 import net.mamoe.mirai.console.data.Value
+import net.mamoe.mirai.console.data.ValueDescription
+import net.mamoe.mirai.console.data.ValueName
+import net.mamoe.yamlkt.Comment
 import net.mamoe.yamlkt.YamlNullableDynamicSerializer
+import java.lang.reflect.Constructor
+import kotlin.reflect.KAnnotatedElement
 
 /**
  * Internal implementation for [PluginData] including:
@@ -53,30 +58,22 @@ internal abstract class PluginDataImpl {
                     }
                 } else {
                     outerLoop@ while (true) {
-                        var valueName: String? = null
                         innerLoop@ while (true) {
                             val index = decodeElementIndex(descriptor)
                             if (index == CompositeDecoder.DECODE_DONE) {
-                                check(valueName == null) { "name must be null at this moment." }
+                                //check(valueName == null) { "name must be null at this moment." }
                                 break@outerLoop
                             }
 
-                            if (!index.isOdd()) { // key
-                                check(valueName == null) { "name must be null at this moment" }
-                                valueName = decodeSerializableElement(descriptor, index, String.serializer())
+                            val node = findNodeInstance(descriptor.getElementName(index))
+                            if (node == null) {
+                                decodeSerializableElement(descriptor, index, YamlNullableDynamicSerializer)
                             } else {
-                                check(valueName != null) { "name must not be null at this moment" }
-
-                                val node = findNodeInstance(valueName)
-                                if (node == null) {
-                                    decodeSerializableElement(descriptor, index, YamlNullableDynamicSerializer)
-                                } else {
-                                    decodeSerializableElement(descriptor, index, node.updaterSerializer)
-                                }
-
-
-                                break@innerLoop
+                                decodeSerializableElement(descriptor, index, node.updaterSerializer)
                             }
+
+
+                            break@innerLoop
                         }
 
                     }
@@ -88,13 +85,15 @@ internal abstract class PluginDataImpl {
         @Suppress("UNCHECKED_CAST")
         override fun serialize(encoder: Encoder, value: Unit) {
             val descriptor = descriptor
-            with(encoder.beginCollection(descriptor, valueNodes.size)) {
-                var index = 0
-
-                // val vSerializer = dataUpdaterSerializerTypeArguments[1] as KSerializer<Any?>
-                valueNodes.forEach { (valueName, _, valueSerializer) ->
-                    encodeSerializableElement(descriptor, index++, String.serializer(), valueName)
-                    encodeSerializableElement(descriptor, index++, valueSerializer, Unit)
+            with(encoder.beginStructure(descriptor)) {
+                repeat(descriptor.elementsCount) { index ->
+                    encodeSerializableElement(
+                        descriptor,
+                        index,
+                        valueNodes.find { it.valueName == descriptor.getElementName(index) }?.updaterSerializer
+                            ?: error("Cannot find a serializer for ${descriptor.getElementName(index)}"),
+                        Unit
+                    )
                 }
                 endStructure(descriptor)
             }
@@ -106,10 +105,36 @@ internal abstract class PluginDataImpl {
      * flatten
      */
     abstract fun onValueChanged(value: Value<*>)
-
-    companion object {
-        private val dataUpdaterSerializerTypeArguments = arrayOf(String.serializer(), YamlNullableDynamicSerializer)
-        private val dataUpdaterSerializerDescriptor =
-            MapSerializer(dataUpdaterSerializerTypeArguments[0], dataUpdaterSerializerTypeArguments[1]).descriptor
+    private val dataUpdaterSerializerDescriptor by lazy {
+        kotlinx.serialization.descriptors.buildClassSerialDescriptor((this as PluginData).saveName) {
+            for (valueNode in valueNodes) valueNode.run {
+                element(valueName, updaterSerializer.descriptor, annotations = annotations, isOptional = true)
+            }
+        }
     }
+}
+
+internal fun KAnnotatedElement.getAnnotationListForValueSerialization(): List<Annotation> {
+    return this.annotations.mapNotNull {
+        when (it) {
+            is SerialName -> error("@SerialName is not supported on Value. Please use @ValueName instead")
+            is ValueName -> null
+            is ValueDescription -> COMMENT_CONSTRUCTOR(it.value)
+            else -> it
+        }
+    }
+}
+
+
+private val COMMENT_CONSTRUCTOR = findAnnotationImplementationClassConstructor<Comment>()!!
+
+@Suppress("NOTHING_TO_INLINE")
+internal inline operator fun <T : Any?> Constructor<T>.invoke(vararg args: Any?): T = this.newInstance(*args)
+
+internal inline fun <reified T : Any> findAnnotationImplementationClassConstructor(): Constructor<out T>? {
+    @Suppress("UNCHECKED_CAST")
+    return T::class.nestedClasses
+        .find { it.simpleName?.endsWith("Impl") == true }?.java?.run {
+            constructors.singleOrNull()
+        } as Constructor<out T>?
 }

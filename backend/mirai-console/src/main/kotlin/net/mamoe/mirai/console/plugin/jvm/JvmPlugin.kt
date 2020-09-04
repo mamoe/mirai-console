@@ -24,14 +24,14 @@ import net.mamoe.mirai.console.data.PluginData
 import net.mamoe.mirai.console.plugin.Plugin
 import net.mamoe.mirai.console.plugin.PluginFileExtensions
 import net.mamoe.mirai.console.plugin.ResourceContainer
+import net.mamoe.mirai.console.plugin.getDescription
 import net.mamoe.mirai.utils.MiraiLogger
 
 
 /**
  * Java, Kotlin 或其他 JVM 平台插件
  *
- * ### ResourceContainer
- * 实现为 [ClassLoader.getResourceAsStream]
+ * 有关 [JvmPlugin] 相关实现方法，请参考
  *
  * @see AbstractJvmPlugin 默认实现
  *
@@ -48,7 +48,7 @@ public interface JvmPlugin : Plugin, CoroutineScope,
     public val logger: MiraiLogger
 
     /** 插件描述 */
-    public val description: JvmPluginDescription
+    public val description: JvmPluginDescription get() = loader.getDescription(this)
 
     /** 所属插件加载器实例 */
     @JvmDefault

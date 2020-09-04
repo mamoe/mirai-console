@@ -33,16 +33,13 @@ console 由后端和前端一起工作. 使用时必须选择一个前端.
 - `mirai-console-terminal`: console 的 Unix 终端界面前端. (开发中)
 
 
-**注意：`mirai-console` 后端和 pure 前端正在进行完全的重构**
-
-重构计划:
-- [x] `1.0-M1`: API 初步
-- [x] `1.0-M2`: API 优化; Java 调用支持
-- [ ] `1.0-M3`: Java 实现支持; 文档补全
+**注意：`mirai-console` 后端和 pure 前端正在进行完全的重构, 所有 API 都不具有稳定性**
 
 ### 使用
 
 **查看示例插件**: [mirai-console-example-plugin](https://github.com/Him188/mirai-console-example-plugin)
+
+正在更新中的文档：[参考文档](docs/README.md)
 
 #### Gradle
 `CORE_VERSION`: [ ![Download](https://api.bintray.com/packages/him188moe/mirai/mirai-core/images/download.svg?) ](https://bintray.com/him188moe/mirai/mirai-core/)
@@ -64,13 +61,4 @@ dependencies {
 ```
 
 #### Maven
-同理 Gradle, 添加依赖即可
-
-### 插件开发与获取
-
-mirai-console 原生支持 Jar 插件, 可由插件扩展支持其他语言的插件.
-
-**mirai-console 目前仍为实验性阶段, 任何功能和 API 都不保证稳定性. 任何 API 都可能在没有警告的情况下修改.**
-
-(实验性) [插件中心 ](https://github.com/mamoe/mirai-plugins)  
-[mirai-console插件开发快速上手 (已过期)](PluginDocs/ToStart.MD)
+同理 Gradle

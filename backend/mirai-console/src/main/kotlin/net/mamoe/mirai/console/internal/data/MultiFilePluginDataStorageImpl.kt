@@ -18,6 +18,7 @@ import net.mamoe.mirai.console.util.ConsoleExperimentalAPI
 import net.mamoe.mirai.utils.MiraiLogger
 import net.mamoe.mirai.utils.SilentLogger
 import net.mamoe.mirai.utils.debug
+import net.mamoe.mirai.utils.warning
 import net.mamoe.yamlkt.Yaml
 import java.io.File
 import java.nio.file.Path
@@ -32,11 +33,14 @@ internal open class MultiFilePluginDataStorageImpl(
     }
 
     public override fun load(holder: PluginDataHolder, instance: PluginData) {
-        instance.onStored(holder, this)
+        instance.onInit(holder, this)
 
         val text = getPluginDataFile(holder, instance).readText()
         if (text.isNotBlank()) {
+            logger.warning { "Deserializing $text" }
             Yaml.default.decodeFromString(instance.updaterSerializer, text)
+        } else {
+            this.store(holder, instance) // save an initial copy
         }
         logger.debug { "Successfully loaded PluginData: ${instance.saveName} (containing ${instance.valueNodes.size} properties)" }
     }
@@ -44,7 +48,7 @@ internal open class MultiFilePluginDataStorageImpl(
     protected open fun getPluginDataFile(holder: PluginDataHolder, instance: PluginData): File {
         val name = instance.saveName
 
-        val dir = directoryPath.resolve(holder.name)
+        val dir = directoryPath.resolve(holder.dataHolderName)
         if (dir.isFile) {
             error("Target directory $dir for holder $holder is occupied by a file therefore data ${instance::class.qualifiedNameOrTip} can't be saved.")
         }

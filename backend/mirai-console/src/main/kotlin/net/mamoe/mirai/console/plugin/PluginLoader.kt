@@ -17,6 +17,7 @@ import net.mamoe.mirai.console.plugin.PluginManager.INSTANCE.register
 import net.mamoe.mirai.console.plugin.description.PluginDescription
 import net.mamoe.mirai.console.plugin.jvm.JarPluginLoader
 import java.io.File
+import java.util.*
 
 /**
  * 插件加载器.
@@ -25,24 +26,31 @@ import java.io.File
  *
  * 有关插件的依赖和已加载的插件列表由 [PluginManager] 维护.
  *
- * ### 内建加载器
+ * ## 内建加载器
  * - [JarPluginLoader] Jar 插件加载器
  *
- * ### 扩展加载器
- * 插件被允许扩展一个加载器。 可通过 [PluginManager.register]
+ * ## 扩展加载器
+ * 插件被允许扩展一个加载器.
+ * Console 使用 [ServiceLoader] 加载 [PluginLoader] 的实例.
+ * 插件也可通过 [PluginManager.register] 手动注册, 然而这是不推荐的.
+ *
+ * ### 实现扩展加载器
+ * 直接实现接口 [PluginLoader] 或 [FilePluginLoader], 并添加 [ServiceLoader] 相关资源文件即可.
  *
  * @see JarPluginLoader Jar 插件加载器
  * @see PluginManager.register 注册一个扩展的插件加载器
  */
 public interface PluginLoader<P : Plugin, D : PluginDescription> {
     /**
-     * 扫描并返回可以被加载的插件的 [描述][PluginDescription] 列表.
+     * 扫描并返回可以被加载的插件的列表.
+     *
+     * 这些插件都应处于还未被加载的状态.
      *
      * 在 console 启动时, [PluginManager] 会获取所有 [PluginDescription], 分析依赖关系, 确认插件加载顺序.
      *
      * **实现细节:** 此函数*只应该*在 console 启动时被调用一次. 但取决于前端实现不同, 或由于被一些插件需要, 此函数也可能会被多次调用.
      */
-    public fun listPlugins(): List<D>
+    public fun listPlugins(): List<P>
 
     /**
      * 获取此插件的描述.
@@ -69,7 +77,7 @@ public interface PluginLoader<P : Plugin, D : PluginDescription> {
      * @throws PluginLoadException 在加载插件遇到意料之中的错误时抛出 (如找不到主类等).
      */
     @Throws(PluginLoadException::class)
-    public fun load(description: D): P
+    public fun load(plugin: P)
 
     /**
      * 启用这个插件.
@@ -149,18 +157,21 @@ public interface FilePluginLoader<P : Plugin, D : PluginDescription> : PluginLoa
  * @see FilePluginLoader
  */
 public abstract class AbstractFilePluginLoader<P : Plugin, D : PluginDescription>(
+    /**
+     * 所支持的插件文件后缀, 含 '.'. 如 [JarPluginLoader] 为 ".jar"
+     */
     public override val fileSuffix: String
 ) : FilePluginLoader<P, D> {
     private fun pluginsFilesSequence(): Sequence<File> =
-        PluginManager.pluginsPath.toFile().walk()
+        PluginManager.pluginsFolder.listFiles().orEmpty().asSequence()
             .filter { it.isFile && it.name.endsWith(fileSuffix, ignoreCase = true) }
 
     /**
-     * 读取扫描到的后缀与 [fileSuffix] 相同的文件中的 [PluginDescription]
+     * 读取扫描到的后缀与 [fileSuffix] 相同的文件中的插件实例, 但不 [加载][PluginLoader.load]
      */
-    protected abstract fun Sequence<File>.mapToDescription(): List<D>
+    protected abstract fun Sequence<File>.extractPlugins(): List<P>
 
-    public final override fun listPlugins(): List<D> = pluginsFilesSequence().mapToDescription()
+    public final override fun listPlugins(): List<P> = pluginsFilesSequence().extractPlugins()
 }
 
 
@@ -170,9 +181,9 @@ internal class DeferredPluginLoader<P : Plugin, D : PluginDescription>(
 ) : PluginLoader<P, D> {
     private val instance by lazy(initializer)
 
-    override fun listPlugins(): List<D> = instance.listPlugins()
+    override fun listPlugins(): List<P> = instance.run { listPlugins() }
     override val P.description: D get() = instance.run { description }
-    override fun load(description: D): P = instance.load(description)
+    override fun load(plugin: P) = instance.load(plugin)
     override fun enable(plugin: P) = instance.enable(plugin)
     override fun disable(plugin: P) = instance.disable(plugin)
 }

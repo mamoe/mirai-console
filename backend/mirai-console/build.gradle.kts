@@ -1,14 +1,12 @@
 @file:Suppress("UnusedImport")
 
 import org.jetbrains.kotlin.gradle.tasks.KotlinCompile
-import java.text.SimpleDateFormat
 import java.time.Instant
-import java.util.Date
-import java.util.TimeZone
 
 plugins {
     kotlin("jvm")
     kotlin("plugin.serialization")
+    kotlin("kapt")
     id("java")
     `maven-publish`
     id("com.jfrog.bintray")
@@ -43,7 +41,7 @@ kotlin {
             progressiveMode = true
 
             useExperimentalAnnotation("kotlin.Experimental")
-            useExperimentalAnnotation("kotlin.OptIn")
+            useExperimentalAnnotation("kotlin.RequiresOptIn")
 
             useExperimentalAnnotation("net.mamoe.mirai.utils.MiraiInternalAPI")
             useExperimentalAnnotation("net.mamoe.mirai.utils.MiraiExperimentalAPI")
@@ -53,7 +51,6 @@ kotlin {
             useExperimentalAnnotation("kotlin.experimental.ExperimentalTypeInference")
             useExperimentalAnnotation("kotlin.contracts.ExperimentalContracts")
             useExperimentalAnnotation("kotlinx.serialization.ExperimentalSerializationApi")
-            useExperimentalAnnotation("net.mamoe.mirai.console.data.ExperimentalPluginConfig")
             useExperimentalAnnotation("net.mamoe.mirai.console.util.ConsoleInternalAPI")
         }
     }
@@ -65,7 +62,7 @@ dependencies {
     implementation(kotlinx("serialization-core", Versions.serialization))
     implementation(kotlin("reflect"))
 
-    implementation("net.mamoe.yamlkt:yamlkt:0.4.0")
+    api("net.mamoe.yamlkt:yamlkt:${Versions.yamlkt}")
     implementation("org.jetbrains.kotlinx:atomicfu:${Versions.atomicFU}")
     api("org.jetbrains:annotations:19.0.0")
     api(kotlinx("coroutines-jdk8", Versions.coroutines))
@@ -82,6 +79,11 @@ dependencies {
 
     testImplementation("org.junit.jupiter:junit-jupiter-api:5.2.0")
     testRuntimeOnly("org.junit.jupiter:junit-jupiter-engine:5.2.0")
+
+
+    val autoService = "1.0-rc7"
+    kapt("com.google.auto.service", "auto-service", autoService)
+    compileOnly("com.google.auto.service", "auto-service-annotations", autoService)
 }
 
 ext.apply {
@@ -116,13 +118,15 @@ tasks {
                     file.writeText(
                         file.readText()
                             .replace(
-                                """val buildDate: Instant = Instant.ofEpochSecond(0)""",
-                                """val buildDate: Instant = Instant.ofEpochSecond(${Instant.now().getEpochSecond()})"""
-                            )
+                                Regex("""val buildDate: Instant = Instant.ofEpochSecond\(.*\)""")
+                            ) {
+                                """val buildDate: Instant = Instant.ofEpochSecond(${
+                                    Instant.now().getEpochSecond()
+                                })"""
+                            }
                             .replace(
-                                """val version: Semver = Semver("0", Semver.SemverType.LOOSE)""",
-                                """val version: Semver = Semver("${project.version}", Semver.SemverType.LOOSE)"""
-                            )
+                                Regex("""val version: Semver = Semver\(".*", Semver.SemverType.LOOSE\)""")
+                            ) { """val version: Semver = Semver("${project.version}", Semver.SemverType.LOOSE)""" }
                     )
             }
         }

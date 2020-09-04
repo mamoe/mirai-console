@@ -10,11 +10,12 @@
 package net.mamoe.mirai.console.internal.command
 
 import net.mamoe.mirai.console.command.*
-import net.mamoe.mirai.console.command.description.CommandArgumentParserException
 import net.mamoe.mirai.contact.Group
 import net.mamoe.mirai.contact.Member
-import net.mamoe.mirai.contact.nameCardOrNick
+import net.mamoe.mirai.message.data.MessageChain
+import net.mamoe.mirai.message.data.asMessageChain
 import kotlin.math.max
+import kotlin.math.min
 
 
 internal infix fun Array<String>.matchesBeginning(list: List<Any>): Boolean {
@@ -38,12 +39,16 @@ internal fun String.fuzzyMatchWith(target: String): Double {
     }
     var match = 0
     for (i in 0..(max(this.lastIndex, target.lastIndex))) {
-        val t = target.getOrNull(match)
-        if (t == this.getOrNull(i) && t != null) {
+        val t = target.getOrNull(match) ?: break
+        if (t == this.getOrNull(i)) {
             match++
         }
     }
-    return match.toDouble() / (max(this.lastIndex, target.lastIndex) + 1)
+
+    val longerLength = max(this.length, target.length)
+    val shorterLength = min(this.length, target.length)
+
+    return match.toDouble() / (longerLength + (shorterLength - match))
 }
 
 internal inline fun <T : Any> Collection<T>.fuzzySearch(
@@ -97,8 +102,38 @@ internal inline fun <T : Any> Collection<T>.fuzzySearchOnly(
 }
 
 
-internal fun Group.fuzzySearchMember(nameCardTarget: String): Member? {
-    return this.members.fuzzySearch(nameCardTarget) { it.nameCardOrNick }
+/**
+ * @return candidates
+ */
+internal fun Group.fuzzySearchMember(
+    nameCardTarget: String,
+    minRate: Double = 0.2, // 参与判断, 用于提示可能的解
+    matchRate: Double = 0.6,// 最终选择的最少需要的匹配率, 减少歧义
+    /**
+     * 如果有多个值超过 [matchRate], 并相互差距小于等于 [disambiguationRate], 则认为有较大歧义风险, 返回可能的解的列表.
+     */
+    disambiguationRate: Double = 0.1,
+): List<Pair<Member, Double>> {
+    val candidates = (this.members + botAsMember)
+        .associateWith { it.nameCard.fuzzyMatchWith(nameCardTarget) }
+        .filter { it.value >= minRate }
+        .toList()
+        .sortedByDescending { it.second }
+
+    val bestMatches = candidates.filter { it.second >= matchRate }
+
+    return when {
+        bestMatches.isEmpty() -> candidates
+        bestMatches.size == 1 -> listOf(bestMatches.single().first to 1.0)
+        else -> {
+            if (bestMatches.first().second - bestMatches.last().second <= disambiguationRate) {
+                // resolution ambiguity
+                candidates
+            } else {
+                listOf(bestMatches.first().first to 1.0)
+            }
+        }
+    }
 }
 
 
@@ -111,37 +146,14 @@ internal inline fun <reified T> List<T>.dropToTypedArray(n: Int): Array<T> = Arr
 @Throws(CommandExecutionException::class)
 internal suspend fun CommandSender.executeCommandInternal(
     command: Command,
-    args: Array<out Any>,
+    args: MessageChain,
     commandName: String,
     checkPermission: Boolean
-) {
-    if (checkPermission && !command.testPermission(this)) {
-        throw CommandExecutionException(this, command, commandName, CommandPermissionDeniedException(this, command))
-    }
-
-    kotlin.runCatching {
-        command.onCommand(this, args)
-    }.onFailure {
-        catchExecutionException(it)
-        if (it !is CommandArgumentParserException) {
-            throw CommandExecutionException(this, command, commandName, it)
-        }
-    }
-}
-
-
-@JvmSynthetic
-internal suspend fun CommandSender.executeCommandInternal(
-    messages: Any,
-    commandName: String
 ): CommandExecuteResult {
-    val command =
-        CommandManagerImpl.matchCommand(commandName) ?: return CommandExecuteResult.CommandNotFound(commandName)
-    val args = messages.flattenCommandComponents().dropToTypedArray(1)
-
-    if (!command.testPermission(this)) {
+    if (checkPermission && !command.testPermission(this)) {
         return CommandExecuteResult.PermissionDenied(command, commandName)
     }
+
     kotlin.runCatching {
         command.onCommand(this, args)
     }.fold(
@@ -161,4 +173,18 @@ internal suspend fun CommandSender.executeCommandInternal(
             )
         }
     )
+}
+
+
+@JvmSynthetic
+internal suspend fun CommandSender.executeCommandInternal(
+    messages: Any,
+    commandName: String,
+    checkPermission: Boolean
+): CommandExecuteResult {
+    val command =
+        CommandManagerImpl.matchCommand(commandName) ?: return CommandExecuteResult.CommandNotFound(commandName)
+    val args = messages.flattenCommandComponents()
+
+    return executeCommandInternal(command, args.drop(1).asMessageChain(), commandName, checkPermission)
 }

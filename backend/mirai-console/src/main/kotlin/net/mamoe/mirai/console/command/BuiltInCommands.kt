@@ -9,6 +9,7 @@
 
 package net.mamoe.mirai.console.command
 
+import kotlinx.coroutines.CoroutineName
 import kotlinx.coroutines.cancel
 import kotlinx.coroutines.cancelAndJoin
 import kotlinx.coroutines.launch
@@ -27,6 +28,7 @@ import net.mamoe.mirai.console.util.BotManager.INSTANCE.removeManager
 import net.mamoe.mirai.console.util.ConsoleExperimentalAPI
 import net.mamoe.mirai.console.util.ConsoleInternalAPI
 import net.mamoe.mirai.contact.*
+import net.mamoe.mirai.event.events.EventCancelledException
 import net.mamoe.mirai.getFriendOrNull
 import net.mamoe.mirai.message.nextMessageOrNull
 import net.mamoe.mirai.utils.secondsToMillis
@@ -113,19 +115,27 @@ public object BuiltInCommands {
 
         @Handler
         public suspend fun CommandSender.handle() {
-            closingLock.withLock {
-                sendMessage("Stopping mirai-console")
-                kotlin.runCatching {
-                    MiraiConsole.job.cancelAndJoin()
-                }.fold(
-                    onSuccess = { sendMessage("mirai-console stopped successfully.") },
-                    onFailure = {
-                        @OptIn(ConsoleInternalAPI::class)
-                        MiraiConsole.mainLogger.error(it)
-                        sendMessage(it.localizedMessage ?: it.message ?: it.toString())
-                    }
-                )
-            }
+            kotlin.runCatching {
+                closingLock.withLock {
+                    sendMessage("Stopping mirai-console")
+                    kotlin.runCatching {
+                        MiraiConsole.job.cancelAndJoin()
+                    }.fold(
+                        onSuccess = {
+                            ignoreException<EventCancelledException> { sendMessage("mirai-console stopped successfully.") }
+                        },
+                        onFailure = {
+                            @OptIn(ConsoleInternalAPI::class)
+                            MiraiConsole.mainLogger.error(it)
+                            ignoreException<EventCancelledException> {
+                                sendMessage(
+                                    it.localizedMessage ?: it.message ?: it.toString()
+                                )
+                            }
+                        }
+                    )
+                }
+            }.exceptionOrNull()?.let(MiraiConsole.mainLogger::error)
             exitProcess(0)
         }
     }
@@ -143,8 +153,8 @@ public object BuiltInCommands {
                 onFailure = { throwable ->
                     sendMessage(
                         "Login failed: ${throwable.localizedMessage ?: throwable.message ?: throwable.toString()}" +
-                                if (this is MessageEventContextAware<*>) {
-                                    CommandManagerImpl.launch {
+                                if (this is CommandSenderOnMessage<*>) {
+                                    CommandManagerImpl.launch(CoroutineName("stacktrace delayer from Login")) {
                                         fromEvent.nextMessageOrNull(60.secondsToMillis) { it.message.contentEquals("stacktrace") }
                                     }
                                     "\n 1 分钟内发送 stacktrace 以获取堆栈信息"
@@ -155,6 +165,24 @@ public object BuiltInCommands {
                 }
             )
         }
+    }
+}
+
+internal inline fun <reified E : Throwable, R> ignoreException(block: () -> R): R? {
+    try {
+        return block()
+    } catch (e: Throwable) {
+        if (e is E) return null
+        throw e
+    }
+}
+
+internal inline fun <reified E : Throwable> ignoreException(block: () -> Unit): Unit? {
+    try {
+        return block()
+    } catch (e: Throwable) {
+        if (e is E) return null
+        throw e
     }
 }
 

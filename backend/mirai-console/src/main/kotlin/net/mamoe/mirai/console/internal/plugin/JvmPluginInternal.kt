@@ -13,19 +13,20 @@ import kotlinx.atomicfu.AtomicLong
 import kotlinx.atomicfu.locks.withLock
 import kotlinx.coroutines.*
 import net.mamoe.mirai.console.MiraiConsole
+import net.mamoe.mirai.console.data.runCatchingLog
 import net.mamoe.mirai.console.internal.data.mkdir
 import net.mamoe.mirai.console.plugin.Plugin
 import net.mamoe.mirai.console.plugin.PluginManager
 import net.mamoe.mirai.console.plugin.PluginManager.INSTANCE.safeLoader
 import net.mamoe.mirai.console.plugin.ResourceContainer.Companion.asResourceContainer
 import net.mamoe.mirai.console.plugin.jvm.JvmPlugin
-import net.mamoe.mirai.console.plugin.jvm.JvmPluginDescription
+import net.mamoe.mirai.console.util.NamedSupervisorJob
 import net.mamoe.mirai.utils.MiraiLogger
+import java.io.File
 import java.io.InputStream
 import java.nio.file.Path
 import java.util.concurrent.locks.ReentrantLock
 import kotlin.coroutines.CoroutineContext
-import kotlin.coroutines.EmptyCoroutineContext
 
 internal val <T> T.job: Job where T : CoroutineScope, T : Plugin get() = this.coroutineContext[Job]!!
 
@@ -35,39 +36,44 @@ internal val <T> T.job: Job where T : CoroutineScope, T : Plugin get() = this.co
 @PublishedApi
 internal abstract class JvmPluginInternal(
     parentCoroutineContext: CoroutineContext
-) : JvmPlugin,
-    CoroutineScope {
+) : JvmPlugin, CoroutineScope {
 
-    override var isEnabled: Boolean = false
+    final override var isEnabled: Boolean = false
 
     private val resourceContainerDelegate by lazy { this::class.java.classLoader.asResourceContainer() }
     override fun getResourceAsStream(path: String): InputStream? = resourceContainerDelegate.getResourceAsStream(path)
 
     // region JvmPlugin
-    /**
-     * Initialized immediately after construction of [JvmPluginInternal] instance
-     */
-    @Suppress("PropertyName")
-    internal open lateinit var _description: JvmPluginDescription
-
-    final override val description: JvmPluginDescription get() = _description
-
     final override val logger: MiraiLogger by lazy {
-        MiraiConsole.newLogger(
-            this._description.name
-        )
+        JarPluginLoaderImpl.logger.runCatchingLog {
+            MiraiConsole.createLogger(
+                "Plugin ${this.description.name}"
+            )
+        }.getOrThrow()
     }
 
     private var firstRun = true
 
     final override val dataFolderPath: Path by lazy {
-        PluginManager.pluginsPath.resolve(description.name).apply { mkdir() }
+        PluginManager.pluginsDataPath.resolve(description.name).apply { mkdir() }
+    }
+
+    final override val dataFolder: File by lazy {
+        dataFolderPath.toFile()
+    }
+
+    override val configFolderPath: Path by lazy {
+        PluginManager.pluginsConfigPath.resolve(description.name).apply { mkdir() }
+    }
+
+    override val configFolder: File by lazy {
+        configFolderPath.toFile()
     }
 
     internal fun internalOnDisable() {
         firstRun = false
         kotlin.runCatching {
-            onLoad()
+            onDisable()
         }.fold(
             onSuccess = {
                 cancel(CancellationException("plugin disabled"))
@@ -95,6 +101,7 @@ internal abstract class JvmPluginInternal(
             },
             onFailure = {
                 cancel(CancellationException("Exception while enabling plugin", it))
+                logger.error(it)
                 return false
             }
         )
@@ -106,14 +113,29 @@ internal abstract class JvmPluginInternal(
 
     // for future use
     @Suppress("PropertyName")
-    @JvmField
-    internal var _intrinsicCoroutineContext: CoroutineContext = EmptyCoroutineContext
-
+    internal val _intrinsicCoroutineContext: CoroutineContext by lazy {
+        CoroutineName("Plugin $dataHolderName")
+    }
     @JvmField
     internal val coroutineContextInitializer = {
-        CoroutineExceptionHandler { _, throwable -> logger.error(throwable) }
+        CoroutineExceptionHandler { context, throwable ->
+            if (throwable.rootCauseOrSelf !is CancellationException) logger.error(
+                "Exception in coroutine ${context[CoroutineName]?.name ?: "<unnamed>"} of ${description.name}",
+                throwable
+            )
+        }
             .plus(parentCoroutineContext)
-            .plus(SupervisorJob(parentCoroutineContext[Job]))
+            .plus(
+                NamedSupervisorJob(
+                    "Plugin $dataHolderName",
+                    parentCoroutineContext[Job] ?: JarPluginLoaderImpl.coroutineContext[Job]!!
+                )
+            )
+            .also {
+                JarPluginLoaderImpl.coroutineContext[Job]!!.invokeOnCompletion {
+                    this.cancel()
+                }
+            }
             .plus(_intrinsicCoroutineContext)
     }
 
@@ -121,7 +143,7 @@ internal abstract class JvmPluginInternal(
         return coroutineContextInitializer().also { _coroutineContext = it }.also {
             job.invokeOnCompletion { e ->
                 if (e != null) {
-                    logger.error(e)
+                    if (e !is CancellationException) logger.error(e)
                     if (this.isEnabled) safeLoader.disable(this)
                 }
             }
@@ -149,3 +171,5 @@ internal inline fun AtomicLong.updateWhen(condition: (Long) -> Boolean, update: 
         return false
     }
 }
+
+internal val Throwable.rootCauseOrSelf: Throwable get() = generateSequence(this) { it.cause }.lastOrNull() ?: this

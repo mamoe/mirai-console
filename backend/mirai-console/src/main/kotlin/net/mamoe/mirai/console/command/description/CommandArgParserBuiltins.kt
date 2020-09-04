@@ -12,10 +12,7 @@ package net.mamoe.mirai.console.command.description
 import net.mamoe.mirai.Bot
 import net.mamoe.mirai.console.command.*
 import net.mamoe.mirai.console.internal.command.fuzzySearchMember
-import net.mamoe.mirai.contact.Friend
-import net.mamoe.mirai.contact.Group
-import net.mamoe.mirai.contact.Member
-import net.mamoe.mirai.contact.User
+import net.mamoe.mirai.contact.*
 import net.mamoe.mirai.getFriendOrNull
 import net.mamoe.mirai.getGroupOrNull
 import net.mamoe.mirai.message.data.At
@@ -97,17 +94,16 @@ public object ExistingBotArgumentParser : InternalCommandArgumentParserExtension
     public override fun parse(raw: String, sender: CommandSender): Bot =
         if (raw == "~") sender.inferBotOrFail()
         else raw.findBotOrFail()
+
+    public override fun parse(raw: SingleMessage, sender: CommandSender): Bot =
+        if (raw is At) {
+            Bot.getInstanceOrNull(raw.target)
+                ?: illegalArgument("@ 的对象不是一个 Bot")
+        } else super.parse(raw, sender)
 }
 
 /**
  * 解析任意一个存在的好友.
- *
- * 支持的输入:
- * - `botId.friendId`
- * - `botId.friendNick` (模糊搜索, 寻找最优匹配)
- * - `~` (指代指令调用人自己作为好友. 仅聊天环境下)
- *
- * 当只登录了一个 [Bot] 时, 无需上述 `botId` 参数即可
  */
 public object ExistingFriendArgumentParser : InternalCommandArgumentParserExtensions<Friend> {
     private val syntax = """
@@ -115,7 +111,7 @@ public object ExistingFriendArgumentParser : InternalCommandArgumentParserExtens
         - `botId.friendNick` (模糊搜索, 寻找最优匹配)
         - `~` (指代指令调用人自己作为好友. 仅聊天环境下)
         
-        当只登录了一个 [Bot] 时, 无需上述 `botId` 参数即可
+        当只登录了一个 [Bot] 时, `botId` 参数可省略
     """.trimIndent()
 
     public override fun parse(raw: String, sender: CommandSender): Friend {
@@ -147,18 +143,12 @@ public object ExistingFriendArgumentParser : InternalCommandArgumentParserExtens
 
 /**
  * 解析任意一个存在的群.
- *
- * 支持的输入:
- * - `botId.groupId`
- * - `~` (指代指令调用人自己所在群. 仅群聊天环境下)
- *
- * 当只登录了一个 [Bot] 时, 无需上述 `botId` 参数即可
  */
 public object ExistingGroupArgumentParser : InternalCommandArgumentParserExtensions<Group> {
     private val syntax = """
         - `botId.groupId`
         - `~` (指代指令调用人自己所在群. 仅群聊天环境下)
-        当只登录了一个 [Bot] 时, 无需上述 `botId` 参数即可
+        当只登录了一个 [Bot] 时, `botId` 参数可省略
     """.trimIndent()
 
     public override fun parse(raw: String, sender: CommandSender): Group {
@@ -183,13 +173,14 @@ public object ExistingGroupArgumentParser : InternalCommandArgumentParserExtensi
 
 public object ExistingUserArgumentParser : InternalCommandArgumentParserExtensions<User> {
     private val syntax: String = """
-         - `botId.group.memberId`
-         - `botId.group.memberCard` (模糊搜索, 寻找最优匹配)
+         - `botId.groupId.memberId`
+         - `botId.groupId.memberCard` (模糊搜索, 寻找最优匹配)
          - `~` (指代指令调用人自己. 仅聊天环境下)
-         - `$` (随机成员. 仅聊天环境下)
+         - `botId.groupId.$` (随机成员. )
          - `botId.friendId
          
-         当只登录了一个 [Bot] 时, 无需上述 `botId` 参数即可
+         当处于一个群内时, `botId` 和 `groupId` 参数都可省略
+         当只登录了一个 [Bot] 时, `botId` 参数可省略
     """.trimIndent()
 
     override fun parse(raw: String, sender: CommandSender): User {
@@ -215,14 +206,6 @@ public object ExistingUserArgumentParser : InternalCommandArgumentParserExtensio
                 illegalArgument("无法推断目标好友或群员. \n$syntax")
             }
         }
-        if (Bot.botInstancesSequence.count() == 1) {
-
-            kotlin.runCatching {
-
-            }.getOrElse {
-                illegalArgument("无法推断目标好友或群员. \n$syntax")
-            }
-        }
         kotlin.runCatching {
             return parseFunction2(raw, sender)
         }.getOrElse {
@@ -232,24 +215,55 @@ public object ExistingUserArgumentParser : InternalCommandArgumentParserExtensio
 }
 
 
+public object ExistingContactArgumentParser : InternalCommandArgumentParserExtensions<Contact> {
+    private val syntax: String = """
+         - `botId.groupId.memberId`
+         - `botId.groupId.memberCard` (模糊搜索, 寻找最优匹配)
+         - `botId.groupId.$` (随机成员. 仅聊天环境下)
+         - `botId.friendId
+         - `botId.groupId`
+         
+         当处于一个群内时, `botId` 和 `groupId` 参数都可省略
+         当只登录了一个 [Bot] 时, `botId` 参数可省略
+    """.trimIndent()
+
+    override fun parse(raw: String, sender: CommandSender): Contact {
+        return parseImpl(sender, raw, ExistingUserArgumentParser::parse, ExistingGroupArgumentParser::parse)
+    }
+
+    override fun parse(raw: SingleMessage, sender: CommandSender): Contact {
+        return parseImpl(sender, raw, ExistingUserArgumentParser::parse, ExistingGroupArgumentParser::parse)
+    }
+
+    private fun <T> parseImpl(
+        sender: CommandSender,
+        raw: T,
+        parseFunction: (T, CommandSender) -> Contact,
+        parseFunction2: (T, CommandSender) -> Contact,
+    ): Contact {
+        kotlin.runCatching {
+            return parseFunction(raw, sender)
+        }.recoverCatching {
+            return parseFunction2(raw, sender)
+        }.getOrElse {
+            illegalArgument("无法推断目标好友, 群或群员. \n$syntax")
+        }
+    }
+}
+
+
 /**
  * 解析任意一个群成员.
- *
- * 支持的输入:
- * - `botId.group.memberId`
- * - `botId.group.memberCard` (模糊搜索, 寻找最优匹配)
- * - `~` (指代指令调用人自己. 仅聊天环境下)
- *
- * 当只登录了一个 [Bot] 时, 无需上述 `botId` 参数即可
  */
 public object ExistingMemberArgumentParser : InternalCommandArgumentParserExtensions<Member> {
     private val syntax: String = """
-         - `botId.group.memberId`
-         - `botId.group.memberCard` (模糊搜索, 寻找最优匹配)
+         - `botId.groupId.memberId`
+         - `botId.groupId.memberCard` (模糊搜索, 寻找最优匹配)
          - `~` (指代指令调用人自己. 仅聊天环境下)
-         - `$` (随机成员)
+         - `groupId.$` (随机成员)
          
-         当只登录了一个 [Bot] 时, 无需上述 `botId` 参数即可
+         当处于一个群内时, `botId` 和 `groupId` 参数都可省略
+         当只登录了一个 [Bot] 时, `botId` 参数可省略
     """.trimIndent()
 
     public override fun parse(raw: String, sender: CommandSender): Member {
@@ -309,12 +323,31 @@ internal interface InternalCommandArgumentParserExtensions<T : Any> : CommandArg
 
     fun Group.findMemberOrFail(idOrCard: String): Member {
         if (idOrCard == "\$") return members.randomOrNull() ?: illegalArgument("当前语境下无法推断随机群员")
-        return idOrCard.toLongOrNull()?.let { getOrNull(it) }
-            ?: fuzzySearchMember(idOrCard)
-            ?: illegalArgument("无法找到目标群员 $idOrCard")
+        idOrCard.toLongOrNull()?.let { getOrNull(it) }?.let { return it }
+        this.members.singleOrNull { it.nameCardOrNick.contains(idOrCard) }?.let { return it }
+        this.members.singleOrNull { it.nameCardOrNick.contains(idOrCard, ignoreCase = true) }?.let { return it }
+
+        val candidates = this.fuzzySearchMember(idOrCard)
+        candidates.singleOrNull()?.let {
+            if (it.second == 1.0) return it.first // single match
+        }
+        if (candidates.isEmpty()) {
+            illegalArgument("无法找到成员 $idOrCard")
+        } else {
+            var index = 1
+            illegalArgument("无法找到成员 $idOrCard。 多个成员满足搜索结果或匹配度不足: \n\n" +
+                    candidates.joinToString("\n", limit = 6) {
+                        val percentage = (it.second * 100).toDecimalPlace(0)
+                        "#${index++}(${percentage}%)${it.first.nameCardOrNick.truncate(10)}(${it.first.id})" // #1 15.4%
+                    }
+            )
+        }
     }
 
-    fun CommandSender.inferBotOrFail(): Bot = (this as? BotAwareCommandSender)?.bot ?: illegalArgument("当前语境下无法推断目标群员")
+    fun CommandSender.inferBotOrFail(): Bot =
+        (this as? UserCommandSender)?.bot
+            ?: Bot.botInstancesSequence.singleOrNull()
+            ?: illegalArgument("当前语境下无法推断目标 Bot, 因为目前有多个 Bot 在线.")
 
     fun CommandSender.inferGroupOrFail(): Group =
         inferGroup() ?: illegalArgument("当前语境下无法推断目标群")
@@ -323,4 +356,29 @@ internal interface InternalCommandArgumentParserExtensions<T : Any> : CommandArg
 
     fun CommandSender.inferFriendOrFail(): Friend =
         (this as? FriendCommandSender)?.user ?: illegalArgument("当前语境下无法推断目标好友")
+}
+
+internal fun Double.toDecimalPlace(n: Int): String {
+    return "%.${n}f".format(this)
+}
+
+internal fun String.truncate(lengthLimit: Int, replacement: String = "..."): String = buildString {
+    var lengthSum = 0
+    for (char in this@truncate) {
+        lengthSum += char.chineseLength()
+        if (lengthSum > lengthLimit) {
+            append(replacement)
+            return toString()
+        } else append(char)
+    }
+    return toString()
+}
+
+internal fun Char.chineseLength(): Int {
+    return when (this) {
+        in '\u0000'..'\u007F' -> 1
+        in '\u0080'..'\u07FF' -> 2
+        in '\u0800'..'\uFFFF' -> 2
+        else -> 2
+    }
 }

@@ -11,14 +11,15 @@
 
 package net.mamoe.mirai.console.plugin
 
+import com.vdurmont.semver4j.Semver
 import net.mamoe.mirai.console.command.CommandOwner
 import net.mamoe.mirai.console.plugin.PluginManager.INSTANCE.disable
 import net.mamoe.mirai.console.plugin.PluginManager.INSTANCE.enable
+import net.mamoe.mirai.console.plugin.PluginManager.INSTANCE.safeLoader
+import net.mamoe.mirai.console.plugin.description.PluginDependency
 import net.mamoe.mirai.console.plugin.description.PluginDescription
+import net.mamoe.mirai.console.plugin.description.PluginKind
 import net.mamoe.mirai.console.plugin.jvm.JvmPlugin
-import net.mamoe.mirai.console.util.ConsoleExperimentalAPI
-import java.io.File
-import java.nio.file.Path
 
 /**
  * 表示一个 mirai-console 插件.
@@ -49,42 +50,36 @@ public interface Plugin : CommandOwner {
 }
 
 /**
- * 支持文件系统存储的扩展.
- *
- * @see JvmPlugin
+ * 获取 [PluginDescription]
  */
-@ConsoleExperimentalAPI("classname is subject to change")
-public interface PluginFileExtensions {
-    /**
-     * 数据目录
-     */
-    public val dataFolderPath: Path
+public inline val Plugin.description: PluginDescription get() = this.safeLoader.getDescription(this)
 
-    /**
-     * 从数据目录获取一个文件.
-     * @see dataFolderPath
-     */
-    @JvmDefault
-    public fun resolveDataFile(relativePath: String): File = dataFolderPath.resolve(relativePath).toFile()
+/**
+ * 获取 [PluginDescription.name`]
+ */
+public inline val Plugin.name: String get() = this.description.name
 
-    /**
-     * 从数据目录获取一个文件.
-     * @see dataFolderPath
-     */
-    @JvmDefault
-    public fun resolveDataPath(relativePath: String): Path = dataFolderPath.resolve(relativePath)
+/**
+ * 获取 [PluginDescription.version]
+ */
+public inline val Plugin.version: Semver get() = this.description.version
 
-    /**
-     * 从数据目录获取一个文件.
-     * @see dataFolderPath
-     */
-    @JvmDefault
-    public fun resolveDataFile(relativePath: Path): File = dataFolderPath.resolve(relativePath).toFile()
+/**
+ * 获取 [PluginDescription.kind]
+ */
+public inline val Plugin.kind: PluginKind get() = this.description.kind
 
-    /**
-     * 从数据目录获取一个文件路径.
-     * @see dataFolderPath
-     */
-    @JvmDefault
-    public fun resolveDataPath(relativePath: Path): Path = dataFolderPath.resolve(relativePath)
-}
+/**
+ * 获取 [PluginDescription.info]
+ */
+public inline val Plugin.info: String get() = this.description.info
+
+/**
+ * 获取 [PluginDescription.author]
+ */
+public inline val Plugin.author: String get() = this.description.author
+
+/**
+ * 获取 [PluginDescription.dependencies]
+ */
+public inline val Plugin.dependencies: List<PluginDependency> get() = this.description.dependencies

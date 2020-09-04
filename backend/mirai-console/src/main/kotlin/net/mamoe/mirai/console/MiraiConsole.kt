@@ -18,13 +18,16 @@ import kotlinx.coroutines.Job
 import net.mamoe.mirai.Bot
 import net.mamoe.mirai.console.MiraiConsole.INSTANCE
 import net.mamoe.mirai.console.MiraiConsoleImplementation.Companion.start
+import net.mamoe.mirai.console.extension.foldExtensions
+import net.mamoe.mirai.console.extensions.BotConfigurationAlterer
 import net.mamoe.mirai.console.internal.MiraiConsoleImplementationBridge
-import net.mamoe.mirai.console.internal.util.childScopeContext
 import net.mamoe.mirai.console.plugin.PluginLoader
+import net.mamoe.mirai.console.plugin.PluginManager
 import net.mamoe.mirai.console.plugin.center.PluginCenter
 import net.mamoe.mirai.console.plugin.jvm.JarPluginLoader
 import net.mamoe.mirai.console.util.ConsoleExperimentalAPI
 import net.mamoe.mirai.console.util.ConsoleInternalAPI
+import net.mamoe.mirai.console.util.CoroutineScopeUtils.childScopeContext
 import net.mamoe.mirai.utils.BotConfiguration
 import net.mamoe.mirai.utils.MiraiLogger
 import java.io.File
@@ -43,6 +46,10 @@ public interface MiraiConsole : CoroutineScope {
      * Console 运行根目录, 由前端决定确切路径.
      *
      * 所有子模块都会在这个目录之下创建子目录.
+     *
+     * @see PluginManager.pluginsPath
+     * @see PluginManager.pluginsDataPath
+     * @see PluginManager.pluginsConfigPath
      */
     public val rootPath: Path
 
@@ -80,7 +87,7 @@ public interface MiraiConsole : CoroutineScope {
      * 创建一个 logger
      */
     @ConsoleExperimentalAPI
-    public fun newLogger(identity: String?): MiraiLogger
+    public fun createLogger(identity: String?): MiraiLogger
 
     public companion object INSTANCE : MiraiConsole by MiraiConsoleImplementationBridge {
         /**
@@ -96,18 +103,46 @@ public interface MiraiConsole : CoroutineScope {
          * 调用 [Bot.login] 可登录.
          *
          * @see Bot.botInstances 获取现有 [Bot] 实例列表
+         * @see BotConfigurationAlterer ExtensionPoint
          */
         // don't static
         @ConsoleExperimentalAPI("This is a low-level API and might be removed in the future.")
         public fun addBot(id: Long, password: String, configuration: BotConfiguration.() -> Unit = {}): Bot =
-            Bot(id, password) {
+            addBotImpl(id, password, configuration)
+
+        /**
+         * 添加一个 [Bot] 实例到全局 Bot 列表, 但不登录.
+         *
+         * 调用 [Bot.login] 可登录.
+         *
+         * @see Bot.botInstances 获取现有 [Bot] 实例列表
+         * @see BotConfigurationAlterer ExtensionPoint
+         */
+        @ConsoleExperimentalAPI("This is a low-level API and might be removed in the future.")
+        public fun addBot(id: Long, password: ByteArray, configuration: BotConfiguration.() -> Unit = {}): Bot =
+            addBotImpl(id, password, configuration)
+
+        @Suppress("UNREACHABLE_CODE")
+        private fun addBotImpl(id: Long, password: Any, configuration: BotConfiguration.() -> Unit = {}): Bot {
+            var config = BotConfiguration().apply {
                 fileBasedDeviceInfo()
                 redirectNetworkLogToDirectory()
-                parentCoroutineContext = MiraiConsole.childScopeContext()
+                parentCoroutineContext = MiraiConsole.childScopeContext("Bot $id")
 
                 this.loginSolver = MiraiConsoleImplementationBridge.createLoginSolver(id, this)
                 configuration()
             }
+
+            config = BotConfigurationAlterer.foldExtensions(config) { acc, extension ->
+                extension.alterConfiguration(id, acc)
+            }
+
+            return when (password) {
+                is ByteArray -> Bot(id, password, config)
+                is String -> Bot(id, password, config)
+                else -> null!!
+            }
+        }
     }
 }
 
