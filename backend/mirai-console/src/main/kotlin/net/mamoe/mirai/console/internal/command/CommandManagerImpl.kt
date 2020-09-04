@@ -66,8 +66,9 @@ internal object CommandManagerImpl : CommandManager, CoroutineScope by Coroutine
             priority = Listener.EventPriority.HIGH
         ) {
             val sender = this.toCommandSender()
+
             // starting parsing
-            fun parseCommandArguments():Message? {
+            fun parseCommandArguments(): Message? {
                 val botSelector = message.asSequence()
                     .filterIsInstance<MessageContent>()
                     // Skip all space before At(bot)(BotSelector)
