@@ -117,8 +117,8 @@ public data class SemVersion(
         }
     }
 
-    public fun data(): String {
-        return "SemVersion{mainVersion=$mainVersion, identifier=$identifier, metadata=$metadata)"
+    public fun toStructureString(): String {
+        return "SemVersion{mainVersion=${mainVersion.contentToString()}, identifier=$identifier, metadata=$metadata)"
     }
 
     override fun equals(other: Any?): Boolean {

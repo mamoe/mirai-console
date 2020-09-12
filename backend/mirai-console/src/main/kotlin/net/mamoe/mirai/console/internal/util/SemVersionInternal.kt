@@ -75,6 +75,9 @@ internal object SemVersionInternal {
                 "<" -> {
                     SemVersion.RangeChecker { it < version }
                 }
+                "=" -> {
+                    SemVersion.RangeChecker { it.compareTo(version) == 0 }
+                }
                 else -> throw AssertionError("operator=$operator, version=$version")
             }
         }
@@ -82,6 +85,9 @@ internal object SemVersionInternal {
     }
 
     fun parseRangeChecker(range: String): SemVersion.RangeChecker {
+        if (range.isBlank()) {
+            throw IllegalArgumentException("Invalid range: Empty range rule.")
+        }
         return range.split("||").map {
             it.parseRule()
         }.let { checks ->
