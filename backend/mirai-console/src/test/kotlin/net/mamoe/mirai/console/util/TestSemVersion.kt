@@ -29,6 +29,15 @@ internal class TestSemVersion {
         assert("1.0-M6".sem() > "1.0-M5-dev-15".sem())
         assert("1.0-RC".sem() > "1.0-M5-dev-15".sem())
         assert("1.0-RC2".sem() > "1.0-RC".sem())
+        // example on semver
+        // 1.0.0-alpha < 1.0.0-alpha.1 < 1.0.0-alpha.beta < 1.0.0-beta < 1.0.0-beta.2 < 1.0.0-beta.11 < 1.0.0-rc.1 < 1.0.0
+        assert("1.0.0-alpha".sem() < "1.0.0-alpha.1".sem())
+        assert("1.0.0-alpha.1".sem() < "1.0.0-alpha.beta".sem())
+        assert("1.0.0-alpha.beta".sem() < "1.0.0-beta".sem())
+        assert("1.0.0-beta".sem() < "1.0.0-beta.2".sem())
+        assert("1.0.0-beta.2".sem() < "1.0.0-beta.11".sem())
+        assert("1.0.0-beta.11".sem() < "1.0.0-rc.1".sem())
+        assert("1.0.0-rc.1".sem() < "1.0.0".sem())
     }
 
     @Test
