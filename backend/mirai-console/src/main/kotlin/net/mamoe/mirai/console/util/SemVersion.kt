@@ -227,14 +227,6 @@ public data class SemVersion(
                 continue@chunkLoop
             } catch (ignored: NumberFormatException) {
             }
-            try {
-                val result = parse(value0).compareTo(parse(value1))
-                if (result != 0) {
-                    return result
-                }
-                continue@chunkLoop
-            } catch (ignored: Throwable) {
-            }
             // compare chars
             for (index0 in 0 until (max(value0.length, value1.length))) {
                 val result = value0.getSafe(index0).compareTo(value1.getSafe(index0))
