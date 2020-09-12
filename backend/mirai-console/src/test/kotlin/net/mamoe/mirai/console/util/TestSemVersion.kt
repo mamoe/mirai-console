@@ -41,45 +41,45 @@ internal class TestSemVersion {
     }
 
     @Test
-    internal fun testRange() {
-        fun SemVersion.RangeChecker.assert(version: String): SemVersion.RangeChecker {
+    internal fun testRequirement() {
+        fun SemVersion.RangeRequirement.assert(version: String): SemVersion.RangeRequirement {
             assert(check(version)) { version }
             return this
         }
 
-        fun SemVersion.RangeChecker.assertFalse(version: String): SemVersion.RangeChecker {
+        fun SemVersion.RangeRequirement.assertFalse(version: String): SemVersion.RangeRequirement {
             assert(!check(version)) { version }
             return this
         }
-        SemVersion.parseRangeChecker("1.0")
+        SemVersion.parseRangeRequirement("1.0")
             .assert("1.0").assert("1.0.0")
             .assert("1.0.0.0")
             .assertFalse("1.1.0").assertFalse("2.0.0")
-        SemVersion.parseRangeChecker("1.x")
+        SemVersion.parseRangeRequirement("1.x")
             .assert("1.0").assert("1.1")
             .assert("1.5").assert("1.14514")
             .assertFalse("2.33")
-        SemVersion.parseRangeChecker("2.0 || 1.2.x")
+        SemVersion.parseRangeRequirement("2.0 || 1.2.x")
             .assert("2.0").assert("2.0.0")
             .assertFalse("2.1").assertFalse("2.0.0.1")
             .assert("1.2.5").assert("1.2.0").assertFalse("1.2")
             .assertFalse("1.0.0")
-        SemVersion.parseRangeChecker("1.0.0 - 114.514.1919.810")
+        SemVersion.parseRangeRequirement("1.0.0 - 114.514.1919.810")
             .assert("1.0.0")
             .assert("114.514").assert("114.514.1919.810")
             .assertFalse("0.0.1")
             .assertFalse("4444.4444")
-        SemVersion.parseRangeChecker("[1.0.0, 19190.0]")
+        SemVersion.parseRangeRequirement("[1.0.0, 19190.0]")
             .assert("1.0.0").assertFalse("0.1.0")
             .assert("19190.0").assertFalse("19198.10")
-        SemVersion.parseRangeChecker(" >= 1.0.0")
+        SemVersion.parseRangeRequirement(" >= 1.0.0")
             .assert("1.0.0")
             .assert("114.514.1919.810")
             .assertFalse("0.0.0")
             .assertFalse("0.98774587")
-        SemVersion.parseRangeChecker("> 1.0.0")
+        SemVersion.parseRangeRequirement("> 1.0.0")
             .assertFalse("1.0.0")
-        kotlin.runCatching { SemVersion.parseRangeChecker("WPOXAXW") }
+        kotlin.runCatching { SemVersion.parseRangeRequirement("WPOXAXW") }
             .onSuccess { assert(false) }
 
     }

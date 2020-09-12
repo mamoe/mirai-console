@@ -28,7 +28,7 @@ public data class SemVersion(
     public val identifier: String? = null,
     public val metadata: String? = null
 ) {
-    public fun interface RangeChecker {
+    public fun interface RangeRequirement {
         public fun check(version: SemVersion): Boolean
     }
 
@@ -91,8 +91,8 @@ public data class SemVersion(
         }
 
         @JvmStatic
-        public fun parseRangeChecker(range: String): RangeChecker {
-            return SemVersionInternal.parseRangeChecker(range)
+        public fun parseRangeRequirement(requirement: String): RangeRequirement {
+            return SemVersionInternal.parseRangeRequirement(requirement)
         }
     }
 
@@ -238,4 +238,6 @@ public data class SemVersion(
     }
 }
 
-public fun SemVersion.RangeChecker.check(version: String): Boolean = check(SemVersion.parse(version))
+public fun SemVersion.RangeRequirement.check(version: String): Boolean = check(SemVersion.parse(version))
+
+public fun SemVersion.satisfies(requirement: SemVersion.RangeRequirement): Boolean = requirement.check(this)
