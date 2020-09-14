@@ -5,6 +5,7 @@
  * Use of this source code is governed by the GNU AFFERO GENERAL PUBLIC LICENSE version 3 license that can be found via the following link.
  *
  * https://github.com/mamoe/mirai/blob/master/LICENSE
+ *
  */
 
 @file:Suppress(
@@ -15,9 +16,9 @@
     "INVISIBLE_GETTER",
     "INVISIBLE_ABSTRACT_MEMBER_FROM_SUPER",
 )
-@file:OptIn(ConsoleInternalApi::class, ConsolePureExperimentalApi::class)
+@file:OptIn(ConsoleInternalApi::class, ConsoleTerminalExperimentalApi::class)
 
-package net.mamoe.mirai.console.pure
+package net.mamoe.mirai.console.terminal
 
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.CoroutineScope
@@ -26,7 +27,7 @@ import net.mamoe.mirai.console.MiraiConsole
 import net.mamoe.mirai.console.MiraiConsoleImplementation
 import net.mamoe.mirai.console.MiraiConsoleImplementation.Companion.start
 import net.mamoe.mirai.console.data.AutoSavePluginDataHolder
-import net.mamoe.mirai.console.pure.noconsole.SystemOutputPrintStream
+import net.mamoe.mirai.console.terminal.noconsole.SystemOutputPrintStream
 import net.mamoe.mirai.console.util.ConsoleExperimentalApi
 import net.mamoe.mirai.console.util.ConsoleInternalApi
 import net.mamoe.mirai.console.util.CoroutineScopeUtils.childScope
@@ -39,7 +40,7 @@ import kotlin.system.exitProcess
 /**
  * mirai-console-pure CLI 入口点
  */
-object MiraiConsolePureLoader {
+object MiraiConsoleTerminalLoader {
     @JvmStatic
     fun main(args: Array<String>) {
         parse(args, exitProcess = true)
@@ -53,10 +54,10 @@ object MiraiConsolePureLoader {
         }
     }
 
-    @ConsolePureExperimentalApi
+    @ConsoleTerminalExperimentalApi
     fun printHelpMessage() {
         val help = listOf(
-            "" to "Mirai-Console[Pure FrontEnd] v" + kotlin.runCatching {
+            "" to "Mirai-Console[Terminal FrontEnd] v" + kotlin.runCatching {
                 net.mamoe.mirai.console.internal.MiraiConsoleBuildConstants.version
             }.getOrElse { "<unknown>" },
             "" to "",
@@ -96,7 +97,7 @@ object MiraiConsolePureLoader {
         }
     }
 
-    @ConsolePureExperimentalApi
+    @ConsoleTerminalExperimentalApi
     fun parse(args: Array<String>, exitProcess: Boolean = false) {
         val iterator = args.iterator()
         while (iterator.hasNext()) {
@@ -107,19 +108,19 @@ object MiraiConsolePureLoader {
                     return
                 }
                 "--no-console" -> {
-                    ConsolePureSettings.noConsole = true
+                    ConsoleTerminalSettings.noConsole = true
                 }
                 "--dont-setup-terminal-ansi" -> {
-                    ConsolePureSettings.setupAnsi = false
+                    ConsoleTerminalSettings.setupAnsi = false
                 }
                 "--no-ansi" -> {
-                    ConsolePureSettings.noAnsi = true
-                    ConsolePureSettings.setupAnsi = false
+                    ConsoleTerminalSettings.noAnsi = true
+                    ConsoleTerminalSettings.setupAnsi = false
                 }
                 "--reading-replacement" -> {
-                    ConsolePureSettings.noConsoleSafeReading = true
+                    ConsoleTerminalSettings.noConsoleSafeReading = true
                     if (iterator.hasNext()) {
-                        ConsolePureSettings.noConsoleReadingReplacement = iterator.next()
+                        ConsoleTerminalSettings.noConsoleReadingReplacement = iterator.next()
                     } else {
                         println("Bad option `--reading-replacement`")
                         println("Usage: --reading-replacement <string>")
@@ -129,7 +130,7 @@ object MiraiConsolePureLoader {
                     }
                 }
                 "--safe-reading" -> {
-                    ConsolePureSettings.noConsoleSafeReading = true
+                    ConsoleTerminalSettings.noConsoleSafeReading = true
                 }
                 else -> {
                     println("Unknown option `$option`")
@@ -140,13 +141,13 @@ object MiraiConsolePureLoader {
                 }
             }
         }
-        if (ConsolePureSettings.noConsole)
+        if (ConsoleTerminalSettings.noConsole)
             SystemOutputPrintStream // Setup Output Channel
     }
 
     @Suppress("MemberVisibilityCanBePrivate")
     @ConsoleExperimentalApi
-    fun startAsDaemon(instance: MiraiConsoleImplementationPure = MiraiConsoleImplementationPure()) {
+    fun startAsDaemon(instance: MiraiConsoleImplementationTerminal = MiraiConsoleImplementationTerminal()) {
         instance.start()
         overrideSTD()
         startupConsoleThread()

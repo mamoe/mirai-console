@@ -5,9 +5,10 @@
  * Use of this source code is governed by the GNU AFFERO GENERAL PUBLIC LICENSE version 3 license that can be found via the following link.
  *
  * https://github.com/mamoe/mirai/blob/master/LICENSE
+ *
  */
 
-package net.mamoe.mirai.console.pure
+package net.mamoe.mirai.console.terminal
 
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.CoroutineName
@@ -27,9 +28,9 @@ import org.jline.reader.UserInterruptException
 
 val consoleLogger by lazy { DefaultLogger("console") }
 
-@OptIn(ConsoleInternalApi::class, ConsolePureExperimentalApi::class)
+@OptIn(ConsoleInternalApi::class, ConsoleTerminalExperimentalApi::class)
 internal fun startupConsoleThread() {
-    if (ConsolePureSettings.noConsole) return
+    if (ConsoleTerminalSettings.noConsole) return
 
     MiraiConsole.launch(CoroutineName("Input")) {
         while (true) {
