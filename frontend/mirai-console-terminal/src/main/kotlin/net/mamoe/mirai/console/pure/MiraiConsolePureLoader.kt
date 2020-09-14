@@ -14,7 +14,7 @@ import net.mamoe.mirai.console.terminal.MiraiConsoleTerminalLoader
 
 @Deprecated(
     message = "for binary compatibility",
-    level = DeprecationLevel.HIDDEN,
+    level = DeprecationLevel.ERROR,
     replaceWith = ReplaceWith(
         "MiraiConsoleTerminalLoader",
         "net.mamoe.mirai.console.terminal.MiraiConsoleTerminalLoader"
@@ -23,7 +23,7 @@ import net.mamoe.mirai.console.terminal.MiraiConsoleTerminalLoader
 object MiraiConsolePureLoader {
     @Deprecated(
         message = "for binary compatibility",
-        level = DeprecationLevel.HIDDEN
+        level = DeprecationLevel.ERROR
     )
     @JvmStatic
     fun main(args: Array<String>) {

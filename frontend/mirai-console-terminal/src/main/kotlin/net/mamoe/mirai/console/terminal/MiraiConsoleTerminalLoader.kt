@@ -34,11 +34,13 @@ import net.mamoe.mirai.console.util.CoroutineScopeUtils.childScope
 import net.mamoe.mirai.message.data.Message
 import net.mamoe.mirai.utils.DefaultLogger
 import net.mamoe.mirai.utils.minutesToMillis
+import java.io.FileDescriptor
+import java.io.FileOutputStream
 import java.io.PrintStream
 import kotlin.system.exitProcess
 
 /**
- * mirai-console-pure CLI 入口点
+ * mirai-console-terminal CLI 入口点
  */
 object MiraiConsoleTerminalLoader {
     @JvmStatic
@@ -161,7 +163,7 @@ internal object ConsoleDataHolder : AutoSavePluginDataHolder,
 
     @ConsoleExperimentalApi
     override val dataHolderName: String
-        get() = "Pure"
+        get() = "Terminal"
 }
 
 internal fun overrideSTD() {
@@ -182,12 +184,16 @@ internal fun overrideSTD() {
 }
 
 
-internal object ConsoleCommandSenderImplPure : MiraiConsoleImplementation.ConsoleCommandSenderImpl {
+internal object ConsoleCommandSenderImplTerminal : MiraiConsoleImplementation.ConsoleCommandSenderImpl {
     override suspend fun sendMessage(message: String) {
         kotlin.runCatching {
             lineReader.printAbove(message)
-        }.onFailure {
-            consoleLogger.error("Exception while ConsoleCommandSenderImplPure.sendMessage", it)
+        }.onFailure { exception ->
+            // If failed. It means JLine Terminal not working...
+            PrintStream(FileOutputStream(FileDescriptor.err)).use {
+                it.println("Exception while ConsoleCommandSenderImplTerminal.sendMessage")
+                exception.printStackTrace(it)
+            }
         }
     }
 

@@ -56,7 +56,7 @@ import java.time.ZoneId
 import java.time.format.DateTimeFormatter
 
 /**
- * mirai-console-pure 后端实现
+ * mirai-console-terminal 后端实现
  *
  * @see MiraiConsoleTerminalLoader CLI 入口点
  */
@@ -66,7 +66,7 @@ class MiraiConsoleImplementationTerminal
     override val rootPath: Path = Paths.get(".").toAbsolutePath(),
     override val builtInPluginLoaders: List<Lazy<PluginLoader<*, *>>> = listOf(lazy { JvmPluginLoader }),
     override val frontEndDescription: MiraiConsoleFrontEndDescription = ConsoleFrontEndDescImpl,
-    override val consoleCommandSender: MiraiConsoleImplementation.ConsoleCommandSenderImpl = ConsoleCommandSenderImplPure,
+    override val consoleCommandSender: MiraiConsoleImplementation.ConsoleCommandSenderImpl = ConsoleCommandSenderImplTerminal,
     override val dataStorageForJvmPluginLoader: PluginDataStorage = MultiFilePluginDataStorage(rootPath.resolve("data")),
     override val dataStorageForBuiltIns: PluginDataStorage = MultiFilePluginDataStorage(rootPath.resolve("data")),
     override val configStorageForJvmPluginLoader: PluginDataStorage = MultiFilePluginDataStorage(rootPath.resolve("config")),
