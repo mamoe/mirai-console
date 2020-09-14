@@ -106,7 +106,6 @@ internal object BuiltInJvmPluginLoaderImpl :
 
     override fun disable(plugin: JvmPlugin) {
         if (!plugin.isEnabled) return
-        ensureActive()
 
         if (plugin is JvmPluginInternal) {
             plugin.internalOnDisable()
