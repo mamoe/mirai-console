@@ -114,9 +114,10 @@ public object BuiltInCommands {
                             }
                         }
                     )
+                    exitProcess(0)
                 }
             }.exceptionOrNull()?.let(MiraiConsole.mainLogger::error)
-            exitProcess(0)
+            exitProcess(1)
         }
 
         @Handler

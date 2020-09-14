@@ -12,6 +12,7 @@ package net.mamoe.mirai.console.terminal
 
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.CoroutineName
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import net.mamoe.mirai.console.MiraiConsole
 import net.mamoe.mirai.console.command.BuiltInCommands
@@ -33,6 +34,15 @@ val consoleLogger by lazy { DefaultLogger("console") }
 internal fun startupConsoleThread() {
     if (terminal is NoConsole) return
 
+    MiraiConsole.launch(CoroutineName("Input Cancelling Daemon")) {
+        while (true) {
+            delay(2000)
+        }
+    }.invokeOnCompletion {
+        runCatching {
+            terminal.close()
+        }.exceptionOrNull()?.printStackTrace()
+    }
     MiraiConsole.launch(CoroutineName("Input")) {
         while (true) {
             try {
@@ -76,11 +86,5 @@ internal fun startupConsoleThread() {
                 consoleLogger.error("Unhandled exception", e)
             }
         }
-    }
-
-    MiraiConsole.job.invokeOnCompletion {
-        runCatching {
-            terminal.close()
-        }.exceptionOrNull()?.printStackTrace()
     }
 }

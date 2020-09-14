@@ -151,10 +151,8 @@ public interface MiraiConsole : CoroutineScope {
 
         /** 关闭 [MiraiConsole] */
         @ConsoleExperimentalApi("This is a low-level API and might be removed in the future.")
-        public fun shutdown() {
-            runBlocking {
-                BuiltInCommands.StopCommand.shutdown { mainLogger.info(it) }
-            }
+        public suspend fun shutdown() {
+            BuiltInCommands.StopCommand.shutdown { mainLogger.info(it) }
         }
     }
 }

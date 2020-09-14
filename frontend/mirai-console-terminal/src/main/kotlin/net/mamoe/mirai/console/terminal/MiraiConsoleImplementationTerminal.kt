@@ -96,7 +96,7 @@ class MiraiConsoleImplementationTerminal
     }
 }
 
-private object ConsoleInputImpl : ConsoleInput {
+internal object ConsoleInputImpl : ConsoleInput {
     private val format = DateTimeFormatter.ofPattern("HH:mm:ss")
 
     override suspend fun requestInput(hint: String): String {
