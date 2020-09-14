@@ -34,7 +34,6 @@ import net.mamoe.mirai.console.util.CoroutineScopeUtils.childScope
 import net.mamoe.mirai.message.data.Message
 import net.mamoe.mirai.utils.DefaultLogger
 import net.mamoe.mirai.utils.minutesToMillis
-import java.io.FileOutputStream
 import java.io.PrintStream
 import kotlin.system.exitProcess
 

@@ -26,8 +26,6 @@ import net.mamoe.mirai.console.util.requestInput
 import net.mamoe.mirai.utils.DefaultLogger
 import org.jline.reader.EndOfFileException
 import org.jline.reader.UserInterruptException
-import java.io.FileDescriptor
-import java.io.FileOutputStream
 
 val consoleLogger by lazy { DefaultLogger("console") }
 
