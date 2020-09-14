@@ -66,7 +66,7 @@ internal fun startupConsoleThread() {
             } catch (e: CancellationException) {
                 return@launch
             } catch (e: UserInterruptException) {
-                MiraiConsole.cancel()
+                MiraiConsole.shutdown()
                 return@launch
             } catch (e: Throwable) {
                 consoleLogger.error("Unhandled exception", e)

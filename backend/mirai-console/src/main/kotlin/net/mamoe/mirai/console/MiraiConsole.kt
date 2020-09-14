@@ -15,9 +15,11 @@ package net.mamoe.mirai.console
 import com.vdurmont.semver4j.Semver
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Job
+import kotlinx.coroutines.runBlocking
 import net.mamoe.mirai.Bot
 import net.mamoe.mirai.console.MiraiConsole.INSTANCE
 import net.mamoe.mirai.console.MiraiConsoleImplementation.Companion.start
+import net.mamoe.mirai.console.command.BuiltInCommands
 import net.mamoe.mirai.console.extensions.BotConfigurationAlterer
 import net.mamoe.mirai.console.internal.MiraiConsoleImplementationBridge
 import net.mamoe.mirai.console.internal.extension.GlobalComponentStorage
@@ -144,6 +146,12 @@ public interface MiraiConsole : CoroutineScope {
                 is ByteArray -> Bot(id, password, config)
                 is String -> Bot(id, password, config)
                 else -> null!!
+            }
+        }
+
+        public fun shutdown() {
+            runBlocking {
+                BuiltInCommands.StopCommand.shutdown { mainLogger.info(it) }
             }
         }
     }
