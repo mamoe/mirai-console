@@ -34,9 +34,9 @@ import net.mamoe.mirai.console.data.PluginDataStorage
 import net.mamoe.mirai.console.plugin.jvm.JvmPluginLoader
 import net.mamoe.mirai.console.plugin.loader.PluginLoader
 import net.mamoe.mirai.console.terminal.ConsoleInputImpl.requestInput
-import net.mamoe.mirai.console.util.ConsoleExperimentalApi
 import net.mamoe.mirai.console.terminal.noconsole.AllEmptyLineReader
 import net.mamoe.mirai.console.terminal.noconsole.NoConsole
+import net.mamoe.mirai.console.util.ConsoleExperimentalApi
 import net.mamoe.mirai.console.util.ConsoleInput
 import net.mamoe.mirai.console.util.ConsoleInternalApi
 import net.mamoe.mirai.console.util.NamedSupervisorJob
@@ -47,6 +47,7 @@ import org.jline.reader.LineReaderBuilder
 import org.jline.reader.impl.completer.NullCompleter
 import org.jline.terminal.Terminal
 import org.jline.terminal.TerminalBuilder
+import org.jline.terminal.impl.AbstractWindowsTerminal
 import java.nio.file.Path
 import java.nio.file.Paths
 import java.time.Instant
@@ -118,7 +119,8 @@ private object ConsoleInputImpl : ConsoleInput {
 }
 
 val lineReader: LineReader by lazy {
-    if (ConsoleTerminalSettings.noConsole) return@lazy AllEmptyLineReader
+    val terminal = terminal
+    if (terminal is NoConsole) return@lazy AllEmptyLineReader
 
     LineReaderBuilder.builder()
         .terminal(terminal)
@@ -135,7 +137,28 @@ val terminal: Terminal = run {
     runCatching {
         TerminalBuilder.builder()
             .dumb(dumb)
+            .paused(true)
             .build()
+            .let { terminal ->
+                if (terminal is AbstractWindowsTerminal) {
+                    var response = terminal
+                    terminal.setOnClose {
+                        response = NoConsole
+                    }
+                    val pumpField = AbstractWindowsTerminal::class.java.getDeclaredField("pump").also {
+                        it.isAccessible = true
+                    }
+                    terminal.resume()
+                    val pumpThread = pumpField[terminal] as? Thread ?: return@let NoConsole
+                    @Suppress("ControlFlowWithEmptyBody")
+                    while (pumpThread.state == Thread.State.NEW);
+                    Thread.sleep(1000)
+                    terminal.setOnClose(null)
+                    return@let response
+                }
+                terminal.resume()
+                terminal
+            }
     }.recoverCatching {
         TerminalBuilder.builder()
             .jansi(true)

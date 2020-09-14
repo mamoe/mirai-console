@@ -90,7 +90,7 @@ internal object AllEmptyLineReader : LineReader {
     @OptIn(ConsoleTerminalExperimentalApi::class)
     override fun readLine(): String =
         if (ConsoleTerminalSettings.noConsoleSafeReading) ConsoleTerminalSettings.noConsoleReadingReplacement
-        else error("Unsupported Reading line when console front-end closed.")
+        else throw EndOfFileException("Unsupported Reading line when console front-end closed.")
 
     // region
     private fun <T> ignored(): T = error("Ignored")

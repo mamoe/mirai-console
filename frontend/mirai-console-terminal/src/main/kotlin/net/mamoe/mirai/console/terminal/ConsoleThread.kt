@@ -12,7 +12,6 @@ package net.mamoe.mirai.console.terminal
 
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.CoroutineName
-import kotlinx.coroutines.cancel
 import kotlinx.coroutines.launch
 import net.mamoe.mirai.console.MiraiConsole
 import net.mamoe.mirai.console.command.BuiltInCommands
@@ -21,16 +20,20 @@ import net.mamoe.mirai.console.command.CommandExecuteStatus
 import net.mamoe.mirai.console.command.CommandManager
 import net.mamoe.mirai.console.command.CommandManager.INSTANCE.executeCommand
 import net.mamoe.mirai.console.command.ConsoleCommandSender
+import net.mamoe.mirai.console.terminal.noconsole.NoConsole
 import net.mamoe.mirai.console.util.ConsoleInternalApi
 import net.mamoe.mirai.console.util.requestInput
 import net.mamoe.mirai.utils.DefaultLogger
+import org.jline.reader.EndOfFileException
 import org.jline.reader.UserInterruptException
+import java.io.FileDescriptor
+import java.io.FileOutputStream
 
 val consoleLogger by lazy { DefaultLogger("console") }
 
 @OptIn(ConsoleInternalApi::class, ConsoleTerminalExperimentalApi::class)
 internal fun startupConsoleThread() {
-    if (ConsoleTerminalSettings.noConsole) return
+    if (terminal is NoConsole) return
 
     MiraiConsole.launch(CoroutineName("Input")) {
         while (true) {
@@ -67,6 +70,9 @@ internal fun startupConsoleThread() {
                 return@launch
             } catch (e: UserInterruptException) {
                 MiraiConsole.shutdown()
+                return@launch
+            } catch (eof: EndOfFileException) {
+                consoleLogger.warning("Closing input service...")
                 return@launch
             } catch (e: Throwable) {
                 consoleLogger.error("Unhandled exception", e)
