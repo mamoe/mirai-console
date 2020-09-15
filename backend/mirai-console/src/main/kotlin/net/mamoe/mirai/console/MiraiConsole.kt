@@ -156,7 +156,7 @@ public interface MiraiConsole : CoroutineScope {
 
         @ConsoleExperimentalApi("This is a low-level API and might be removed in the future.")
         public val isShutDowning: Boolean
-            get() = BuiltInCommands.StopCommand.MiraiShutDownStatus.shutDowning
+            get() = !job.isActive
     }
 }
 
