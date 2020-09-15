@@ -39,11 +39,15 @@ internal fun startupConsoleThread() {
             delay(2000)
         }
     }.invokeOnCompletion {
-        runCatching {
+        runCatching<Unit> {
             terminal.close()
+            ConsoleInputImpl.thread.shutdownNow()
+            runCatching {
+                ConsoleInputImpl.executingCoroutine?.cancel(EndOfFileException())
+            }
         }.exceptionOrNull()?.printStackTrace()
     }
-    MiraiConsole.launch(CoroutineName("Input")) {
+    MiraiConsole.launch(CoroutineName("Console Command")) {
         while (true) {
             try {
                 val next = MiraiConsole.requestInput("").let {

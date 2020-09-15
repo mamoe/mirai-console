@@ -96,28 +96,6 @@ class MiraiConsoleImplementationTerminal
     }
 }
 
-internal object ConsoleInputImpl : ConsoleInput {
-    private val format = DateTimeFormatter.ofPattern("HH:mm:ss")
-
-    override suspend fun requestInput(hint: String): String {
-        return withContext(Dispatchers.IO) {
-            lineReader.readLine(
-                if (hint.isNotEmpty()) {
-                    lineReader.printAbove(
-                        Ansi.ansi()
-                            .fgCyan().a(LocalDateTime.ofInstant(Instant.now(), ZoneId.systemDefault()).format(format))
-                            .a(" ")
-                            .fgMagenta().a(hint)
-                            .reset()
-                            .toString()
-                    )
-                    "$hint > "
-                } else "> "
-            )
-        }
-    }
-}
-
 val lineReader: LineReader by lazy {
     val terminal = terminal
     if (terminal is NoConsole) return@lazy AllEmptyLineReader
