@@ -107,6 +107,9 @@ internal object BuiltInJvmPluginLoaderImpl :
     override fun disable(plugin: JvmPlugin) {
         if (!plugin.isEnabled) return
 
+        if (!MiraiConsole.isShutDowning)
+            ensureActive()
+
         if (plugin is JvmPluginInternal) {
             plugin.internalOnDisable()
         } else plugin.onDisable()

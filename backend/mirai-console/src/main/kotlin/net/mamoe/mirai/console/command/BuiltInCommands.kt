@@ -91,7 +91,9 @@ public object BuiltInCommands {
 
         private val closingLock = Mutex()
 
+        // Don't load StopCommand.
         internal object MiraiShutDownStatus {
+            @JvmStatic
             internal var shutDowning = false
         }
 
