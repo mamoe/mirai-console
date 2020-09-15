@@ -91,9 +91,14 @@ public object BuiltInCommands {
 
         private val closingLock = Mutex()
 
+        internal object MiraiShutDownStatus {
+            internal var shutDowning = false
+        }
+
         internal suspend fun shutdown(sendMessage: suspend (message: String) -> Unit) {
             kotlin.runCatching {
                 closingLock.withLock {
+                    MiraiShutDownStatus.shutDowning = true
                     sendMessage("Stopping mirai-console")
                     kotlin.runCatching {
                         runIgnoreException<CancellationException> { MiraiConsole.job.cancelAndJoin() }

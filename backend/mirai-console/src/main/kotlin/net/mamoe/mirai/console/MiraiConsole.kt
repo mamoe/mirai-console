@@ -15,7 +15,6 @@ package net.mamoe.mirai.console
 import com.vdurmont.semver4j.Semver
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Job
-import kotlinx.coroutines.runBlocking
 import net.mamoe.mirai.Bot
 import net.mamoe.mirai.console.MiraiConsole.INSTANCE
 import net.mamoe.mirai.console.MiraiConsoleImplementation.Companion.start
@@ -154,6 +153,10 @@ public interface MiraiConsole : CoroutineScope {
         public suspend fun shutdown() {
             BuiltInCommands.StopCommand.shutdown { mainLogger.info(it) }
         }
+
+        @ConsoleExperimentalApi("This is a low-level API and might be removed in the future.")
+        public val isShutDowning: Boolean
+            get() = BuiltInCommands.StopCommand.MiraiShutDownStatus.shutDowning
     }
 }
 
