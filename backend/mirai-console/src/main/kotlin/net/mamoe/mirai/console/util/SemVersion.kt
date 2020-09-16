@@ -59,7 +59,7 @@ public data class SemVersion internal constructor(
      * @see [parseRangeRequirement]
      */
     public fun interface RangeRequirement {
-        /** 检查给定版本号[version] 是否满足此依赖要求 */
+        /** 在 [version] 满足此要求时返回 true */
         public fun check(version: SemVersion): Boolean
     }
 
