@@ -59,7 +59,7 @@ public data class SemVersion internal constructor(
      * @see [parseRangeRequirement]
      */
     public fun interface RangeRequirement {
-        /** 检查给定版本号是否满足此依赖要求 */
+        /** 检查给定版本号[version] 是否满足此依赖要求 */
         public fun check(version: SemVersion): Boolean
     }
 
@@ -150,7 +150,8 @@ public data class SemVersion internal constructor(
          * - `< 1.0.0-RC`     要求 1.0.0-RC 之前的版本, 不能是 1.0.0-RC
          * - `<= 1.0.0-RC`    要求 1.0.0-RC 或之前的版本, 可以是 1.0.0-RC
          *
-         * 对于多个规则, 也允许使用 `||` 拼接在一起 E.g:
+         * 对于多个规则, 也允许使用 `||` 拼接在一起.
+         * 例如:
          * - `1.x || 2.x || 3.0`
          * - `<= 0.5.3 || >= 1.0.0`
          *
@@ -169,7 +170,7 @@ public data class SemVersion internal constructor(
         public fun RangeRequirement.check(version: String): Boolean = check(parse(version))
 
         /**
-         * 检查是否满足 [requirement]
+         * 当满足 [requirement] 时返回 true, 否则返回 false
          */
         @JvmStatic
         public fun SemVersion.satisfies(requirement: RangeRequirement): Boolean = requirement.check(this)
