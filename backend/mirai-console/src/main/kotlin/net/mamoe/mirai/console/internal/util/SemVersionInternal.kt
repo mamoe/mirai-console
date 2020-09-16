@@ -121,10 +121,9 @@ internal object SemVersionInternal {
 
     @JvmStatic
     fun SemVersion.compareInternal(other: SemVersion): Int {
-        // metadata only metadata
-        // We don't need to compare it
+        // ignored metadata in comparing
 
-        // If $this equals $version (without metadata),
+        // If $this equals $other (without metadata),
         // return same.
         if (other.mainVersion.contentEquals(mainVersion) && identifier == other.identifier) {
             return 0
@@ -139,7 +138,7 @@ internal object SemVersionInternal {
         // If main-versions are same.
         var identifier0 = identifier
         var identifier1 = other.identifier
-        // If any don't have the identifier...
+        // If anyone doesn't have the identifier...
         if (identifier0 == null || identifier1 == null) {
             return when (identifier0) {
                 identifier1 -> { // null == null
@@ -147,10 +146,10 @@ internal object SemVersionInternal {
                     0
                 }
                 null -> {
-                    // $version has identifier, but $this don't have identifier
+                    // $other has identifier, but $this don't have identifier
                     // E.g:
                     //   this    = 1.0.0
-                    //   version = 1.0.0-dev
+                    //   other   = 1.0.0-dev
                     1
                 }
                 // It is the opposite of the above.
