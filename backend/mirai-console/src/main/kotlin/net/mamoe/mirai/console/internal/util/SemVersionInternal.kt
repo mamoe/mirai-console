@@ -20,11 +20,12 @@ import kotlin.math.min
 
 @Suppress("RegExpRedundantEscape")
 internal object SemVersionInternal {
-    private val directVersion = """^[0-9]+(\.[0-9]+)*$""".toRegex()
-    private val versionSelect = """^[0-9]+(\.[0-9]+)*\.x(\.[0-9]+)*$""".toRegex()
-    private val versionRange = """([0-9]+(\.[0-9]+)*)\s*\-\s*([0-9]+(\.[0-9]+)*)""".toRegex()
-    private val versionMathRange = """\[([0-9]+(\.[0-9]+)*)\s*\,\s*([0-9]+(\.[0-9]+)*)\]""".toRegex()
-    private val versionRule = """^*((\>\=)|(\<\=)|(\=)|(\>)|(\<))\s*([0-9]+(\.[0-9]+)*)$""".toRegex()
+    private val directVersion = """^[0-9]+(\.[0-9]+)+(|[\-+].+)$""".toRegex()
+    private val versionSelect = """^[0-9]+(\.[0-9]+)*\.x$""".toRegex()
+    private val versionRange = """([0-9]+(\.[0-9]+)+(|[\-+].+))\s*\-\s*([0-9]+(\.[0-9]+)+(|[\-+].+))""".toRegex()
+    private val versionMathRange =
+        """\[([0-9]+(\.[0-9]+)+(|[\-+].+))\s*\,\s*([0-9]+(\.[0-9]+)+(|[\-+].+))\]""".toRegex()
+    private val versionRule = """^((\>\=)|(\<\=)|(\=)|(\>)|(\<))\s*([0-9]+(\.[0-9]+)+(|[\-+].+))$""".toRegex()
     private fun Collection<*>.dump() {
         forEachIndexed { index, value ->
             println("$index, $value")
@@ -52,14 +53,15 @@ internal object SemVersionInternal {
         }
         (versionRange.matchEntire(trimmed) ?: versionMathRange.matchEntire(trimmed))?.let { range ->
             var start = SemVersion.parse(range.groupValues[1])
-            var end = SemVersion.parse(range.groupValues[3])
+            var end = SemVersion.parse(range.groupValues[4])
             if (start > end) {
                 val c = end
                 end = start
                 start = c
             }
+            val compareRange = start..end
             return SemVersion.RangeRequirement {
-                start <= it && it <= end
+                it in compareRange
             }
         }
         versionRule.matchEntire(trimmed)?.let { result ->
@@ -87,25 +89,38 @@ internal object SemVersionInternal {
         throw UnsupportedOperationException("Cannot parse $this")
     }
 
+    private fun SemVersion.RangeRequirement.withRule(rule: String): SemVersion.RangeRequirement {
+        return object : SemVersion.RangeRequirement {
+            override fun check(version: SemVersion): Boolean {
+                return this@withRule.check(version)
+            }
+
+            override fun toString(): String {
+                return rule
+            }
+        }
+    }
+
     @JvmStatic
     fun parseRangeRequirement(requirement: String): SemVersion.RangeRequirement {
         if (requirement.isBlank()) {
             throw IllegalArgumentException("Invalid requirement: Empty requirement rule.")
         }
         return requirement.split("||").map {
-            it.parseRule()
+            it.parseRule().withRule(it)
         }.let { checks ->
+            if (checks.size == 1) return checks[0]
             SemVersion.RangeRequirement {
                 checks.forEach { rule ->
                     if (rule.check(it)) return@RangeRequirement true
                 }
                 return@RangeRequirement false
-            }
+            }.withRule(requirement)
         }
     }
 
     @JvmStatic
-    fun SemVersion.compareInternal(other: SemVersion):Int{
+    fun SemVersion.compareInternal(other: SemVersion): Int {
         // metadata only metadata
         // We don't need to compare it
 

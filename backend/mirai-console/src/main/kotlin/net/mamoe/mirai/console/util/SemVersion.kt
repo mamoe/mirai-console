@@ -17,19 +17,21 @@ package net.mamoe.mirai.console.util
 import kotlinx.serialization.Serializable
 import kotlinx.serialization.Transient
 import net.mamoe.mirai.console.internal.util.SemVersionInternal
+import net.mamoe.mirai.console.util.SemVersion.Companion.equals
 
 /**
  * 语义化版本支持
  *
- * 在阅读此文件前, 我们推荐先去阅读 https://semver.org/lang/zh-CN/
- * 能够帮助你了解什么是语义化版本, 语义化版本是什么, 我们不再过多描述,
- * 上面的站点应该已经详细告诉你什么是语义化版本了
+ * 在阅读此文件前, 请先阅读 https://semver.org/lang/zh-CN/
+ * 能够帮助了解什么是语义化版本, 语义化版本是什么, 此文件不再过多描述
  *
- * 我们来看一个例子 `1.0.0-M4+c25733b8`
+ * ----
  *
- * 我们会解析出三个内容, mainVersion, identifier 和 metadata.
+ * 这是一个例子 `1.0.0-M4+c25733b8`
  *
- * 我们对这个例子进行解析会得到
+ * 将会解析出三个内容, mainVersion, identifier 和 metadata.
+ *
+ * 对这个例子进行解析会得到
  * ```
  * SemVersion(
  *   mainVersion = IntArray [1, 0, 0],
@@ -38,26 +40,49 @@ import net.mamoe.mirai.console.internal.util.SemVersionInternal
  * )
  * ```
  * 其中 identifier 和 metadata 都是可以选的, 我们对于 mainVersion 的最大长度不作出限制,
- * 但是必须至少拥有两位及以上的版本描述符
+ * 但是必须至少拥有两位及以上的版本描述符, (即必须拥有主版本号和次版本号)
  *
  * 比如 `1-M4` 是不合法的, 但是 `1.0-M4` 是合法的
  *
  */
 @Serializable
-public data class SemVersion(
+public data class SemVersion internal constructor(
+    /** 核心版本号, 至少包含一个主版本号和一个次版本号 */
     public val mainVersion: IntArray,
+    /** 先行版本号识别符 */
     public val identifier: String? = null,
+    /** 版本号元数据, 不参与版本号对比([compareTo]), 但是参与版本号严格对比([equals]) */
     public val metadata: String? = null
 ) : Comparable<SemVersion> {
+    /**
+     * 一条依赖规则
+     * @see [parseRangeRequirement]
+     */
     public fun interface RangeRequirement {
+        /** 检查给定版本号是否满足此依赖要求 */
         public fun check(version: SemVersion): Boolean
     }
 
     public companion object {
+        /** 解析核心版本号, eg: `1.0.0` -> IntArray[1, 0, 0] */
         @JvmStatic
         private fun String.parseMainVersion(): IntArray =
             split('.').map { it.toInt() }.toIntArray()
 
+        /**
+         * 解析一个版本号, 将会返回一个 [SemVersion],
+         * 如果发生解析错误将会抛出一个 [IllegalArgumentException] 或者 [NumberFormatException]
+         *
+         * 对于版本号的组成, 我们有以下规定:
+         * - 必须包含主版本号和次版本号
+         * - 存在 先行版本号 的时候 先行版本号 不能为空
+         * - 存在 元数据 的时候 元数据 不能为空
+         *
+         * 注意情况:
+         * - 第一个 `+` 之后的所有内容全部识别为元数据
+         *     - `1.0+METADATA-M4`, metadata="METADATA-M4"
+         */
+        @Throws(IllegalArgumentException::class, NumberFormatException::class)
         @JvmStatic
         public fun parse(version: String): SemVersion {
             var mainVersionEnd: Int = 0
@@ -111,14 +136,41 @@ public data class SemVersion(
             )
         }
 
+        /**
+         * 解析一条依赖需求描述, 在无法解析的时候抛出 [IllegalArgumentException]
+         *
+         * 对于一条规则, 有以下方式可选
+         *
+         * - `1.0.0-M4`       要求 1.0.0-M4 版本, 且只能是 1.0.0-M4 版本
+         * - `1.x`            要求 1.x 版本
+         * - `1.0.0 - 1.2.0`  要求 1.0.0 到 1.2.0 的任意版本, 注意 `-` 两边必须要有空格
+         * - `[1.0.0, 1.2.0]` 与 `1.0.0 - 1.2.0` 一致
+         * - `> 1.0.0-RC`     要求 1.0.0-RC 之后的版本, 不能是 1.0.0-RC
+         * - `>= 1.0.0-RC`    要求 1.0.0-RC 或之后的版本, 可以是 1.0.0-RC
+         * - `< 1.0.0-RC`     要求 1.0.0-RC 之前的版本, 不能是 1.0.0-RC
+         * - `<= 1.0.0-RC`    要求 1.0.0-RC 或之前的版本, 可以是 1.0.0-RC
+         *
+         * 对于多个规则, 也允许使用 `||` 拼接在一起 E.g:
+         * - `1.x || 2.x || 3.0`
+         * - `<= 0.5.3 || >= 1.0.0`
+         *
+         * 特别注意:
+         * - 依赖规则版本号不需要携带版本号元数据, 元数据不参与依赖需求的检查
+         * - 如果目标版本号携带有先行版本号, 请不要忘记先行版本号
+         */
+        @Throws(IllegalArgumentException::class)
         @JvmStatic
         public fun parseRangeRequirement(requirement: String): RangeRequirement {
             return SemVersionInternal.parseRangeRequirement(requirement)
         }
 
+        /** @see [RangeRequirement.check] */
         @JvmStatic
         public fun RangeRequirement.check(version: String): Boolean = check(parse(version))
 
+        /**
+         * 检查是否满足 [requirement]
+         */
         @JvmStatic
         public fun SemVersion.satisfies(requirement: RangeRequirement): Boolean = requirement.check(this)
 
