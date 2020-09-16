@@ -39,8 +39,9 @@ import net.mamoe.mirai.console.util.SemVersion.Companion.equals
  *   metadata    = "c25733b8"
  * )
  * ```
- * 其中 identifier 和 metadata 都是可选的, 我们对于 mainVersion 的最大长度不作出限制,
- * 但是必须至少拥有两位及以上的版本描述符, (即必须拥有主版本号和次版本号)
+ * 其中 identifier 和 metadata 都是可选的, 该实现对于 mainVersion 的最大长度不作出限制,
+ * 也建议 mainVersion 的长度不要过长或过短
+ * 但是必须至少拥有两位及以上的版本描述符, (即必须拥有主版本号和次版本号).
  *
  * 比如 `1-M4` 是不合法的, 但是 `1.0-M4` 是合法的
  *
