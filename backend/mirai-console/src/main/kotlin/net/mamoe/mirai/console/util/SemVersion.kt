@@ -18,8 +18,31 @@ import kotlinx.serialization.Serializable
 import kotlinx.serialization.Transient
 import net.mamoe.mirai.console.internal.util.SemVersionInternal
 
-// X.X.X-AAAAA+BBBBBB
-
+/**
+ * 语义化版本支持
+ *
+ * 在阅读此文件前, 我们推荐先去阅读 https://semver.org/lang/zh-CN/
+ * 能够帮助你了解什么是语义化版本, 语义化版本是什么, 我们不再过多描述,
+ * 上面的站点应该已经详细告诉你什么是语义化版本了
+ *
+ * 我们来看一个例子 `1.0.0-M4+c25733b8`
+ *
+ * 我们会解析出三个内容, mainVersion, identifier 和 metadata.
+ *
+ * 我们对这个例子进行解析会得到
+ * ```
+ * SemVersion(
+ *   mainVersion = IntArray [1, 0, 0],
+ *   identifier  = "M4"
+ *   metadata    = "c25733b8"
+ * )
+ * ```
+ * 其中 identifier 和 metadata 都是可以选的, 我们对于 mainVersion 的最大长度不作出限制,
+ * 但是必须至少拥有两位及以上的版本描述符
+ *
+ * 比如 `1-M4` 是不合法的, 但是 `1.0-M4` 是合法的
+ *
+ */
 @Serializable
 public data class SemVersion(
     public val mainVersion: IntArray,
@@ -111,7 +134,7 @@ public data class SemVersion(
     }
 
     @Transient
-    private var toString: String? = null
+    private var toString: String? = null // For cache.
     override fun toString(): String {
         return toString ?: kotlin.run {
             buildString {
