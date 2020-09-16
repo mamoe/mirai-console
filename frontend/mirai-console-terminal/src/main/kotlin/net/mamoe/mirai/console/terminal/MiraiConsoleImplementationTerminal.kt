@@ -24,7 +24,10 @@ package net.mamoe.mirai.console.terminal
 
 
 import com.vdurmont.semver4j.Semver
-import kotlinx.coroutines.*
+import kotlinx.coroutines.CancellationException
+import kotlinx.coroutines.CoroutineExceptionHandler
+import kotlinx.coroutines.CoroutineName
+import kotlinx.coroutines.CoroutineScope
 import net.mamoe.mirai.console.ConsoleFrontEndImplementation
 import net.mamoe.mirai.console.MiraiConsole
 import net.mamoe.mirai.console.MiraiConsoleFrontEndDescription
@@ -50,10 +53,6 @@ import org.jline.terminal.TerminalBuilder
 import org.jline.terminal.impl.AbstractWindowsTerminal
 import java.nio.file.Path
 import java.nio.file.Paths
-import java.time.Instant
-import java.time.LocalDateTime
-import java.time.ZoneId
-import java.time.format.DateTimeFormatter
 
 /**
  * mirai-console-terminal 后端实现
@@ -119,12 +118,17 @@ val terminal: Terminal = run {
             .build()
             .let { terminal ->
                 if (terminal is AbstractWindowsTerminal) {
+                    val pumpField = runCatching {
+                        AbstractWindowsTerminal::class.java.getDeclaredField("pump").also {
+                            it.isAccessible = true
+                        }
+                    }.onFailure { err ->
+                        err.printStackTrace()
+                        return@let terminal.also { it.resume() }
+                    }.getOrThrow()
                     var response = terminal
                     terminal.setOnClose {
                         response = NoConsole
-                    }
-                    val pumpField = AbstractWindowsTerminal::class.java.getDeclaredField("pump").also {
-                        it.isAccessible = true
                     }
                     terminal.resume()
                     val pumpThread = pumpField[terminal] as? Thread ?: return@let NoConsole
