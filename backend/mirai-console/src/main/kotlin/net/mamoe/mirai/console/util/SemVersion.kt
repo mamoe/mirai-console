@@ -23,13 +23,13 @@ import net.mamoe.mirai.console.util.SemVersion.Companion.equals
  * 语义化版本支持
  *
  * 在阅读此文件前, 请先阅读 https://semver.org/lang/zh-CN/
- * 能够帮助了解什么是语义化版本, 语义化版本是什么, 此文件不再过多描述
+ * 该文档说明了语义化版本是什么, 此文件不再过多描述
  *
  * ----
  *
  * 这是一个例子 `1.0.0-M4+c25733b8`
  *
- * 将会解析出三个内容, mainVersion, identifier 和 metadata.
+ * 将会解析出三个内容, mainVersion(核心版本号), identifier(先行版本号) 和 metadata(元数据).
  *
  * 对这个例子进行解析会得到
  * ```
@@ -39,7 +39,7 @@ import net.mamoe.mirai.console.util.SemVersion.Companion.equals
  *   metadata    = "c25733b8"
  * )
  * ```
- * 其中 identifier 和 metadata 都是可以选的, 我们对于 mainVersion 的最大长度不作出限制,
+ * 其中 identifier 和 metadata 都是可选的, 我们对于 mainVersion 的最大长度不作出限制,
  * 但是必须至少拥有两位及以上的版本描述符, (即必须拥有主版本号和次版本号)
  *
  * 比如 `1-M4` 是不合法的, 但是 `1.0-M4` 是合法的
