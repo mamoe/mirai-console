@@ -203,8 +203,11 @@ public data class SemVersion internal constructor(
         }
     }
 
+    /**
+     * 将 [SemVersion] 转为 Kotlin data class 风格的 [String]
+     */
     public fun toStructuredString(): String {
-        return "SemVersion{mainVersion=${mainVersion.contentToString()}, identifier=$identifier, metadata=$metadata)"
+        return "SemVersion(mainVersion=${mainVersion.contentToString()}, identifier=$identifier, metadata=$metadata)"
     }
 
     override fun equals(other: Any?): Boolean {
