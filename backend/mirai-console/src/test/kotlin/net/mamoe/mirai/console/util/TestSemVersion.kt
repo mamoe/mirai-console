@@ -14,6 +14,7 @@
 
 package net.mamoe.mirai.console.util
 
+import net.mamoe.mirai.console.util.SemVersion.Companion.check
 import org.junit.jupiter.api.Test
 
 internal class TestSemVersion {
