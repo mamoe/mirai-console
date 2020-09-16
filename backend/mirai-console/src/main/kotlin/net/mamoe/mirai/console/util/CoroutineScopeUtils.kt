@@ -7,11 +7,13 @@
  * https://github.com/mamoe/mirai/blob/master/LICENSE
  */
 
-@file:JvmName("CoroutineScopeUtils")
 
 package net.mamoe.mirai.console.util
 
-import kotlinx.coroutines.*
+import kotlinx.coroutines.CompletableJob
+import kotlinx.coroutines.CoroutineName
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Job
 import kotlin.coroutines.CoroutineContext
 import kotlin.coroutines.EmptyCoroutineContext
 
@@ -42,11 +44,24 @@ public object CoroutineScopeUtils {
         }
 }
 
+@Suppress("FunctionName")
 @ConsoleExperimentalApi
-public class NamedSupervisorJob @JvmOverloads constructor(
+public fun NamedSupervisorJob(
+    name: String, parent: Job? = null
+): CompletableJob = NamedSupervisorJobImpl(name, parent)
+
+@ConsoleExperimentalApi
+@Suppress(
+    "INVISIBLE_MEMBER", "INVISIBLE_REFERENCE", "EXPOSED_SUPER_CLASS",
+    "CANNOT_OVERRIDE_INVISIBLE_MEMBER", "NO_EXPLICIT_VISIBILITY_IN_API_MODE",
+    "NO_EXPLICIT_VISIBILITY_IN_API_MODE_WARNING"
+)
+private class NamedSupervisorJobImpl @JvmOverloads constructor(
     private val name: String,
     parent: Job? = null
-) : CompletableJob by SupervisorJob(parent) {
+) : kotlinx.coroutines.JobImpl(parent) {
+    override fun childCancelled(cause: Throwable): Boolean = false
+
     override fun toString(): String {
         return "NamedSupervisorJob($name)"
     }

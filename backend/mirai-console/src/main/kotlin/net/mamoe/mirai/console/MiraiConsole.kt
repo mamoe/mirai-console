@@ -148,15 +148,15 @@ public interface MiraiConsole : CoroutineScope {
             }
         }
 
-        /** 关闭 [MiraiConsole] */
-        @ConsoleExperimentalApi("This is a low-level API and might be removed in the future.")
+        /** 关闭 [MiraiConsole], 不要随意使用此方法, 插件在任何情况下都不应该主动调用此方法 */
+        @ConsoleInternalApi("This is a low-level API and might be removed in the future.")
         public suspend fun shutdown() {
             BuiltInCommands.StopCommand.shutdown { mainLogger.info(it) }
         }
 
         @ConsoleExperimentalApi("This is a low-level API and might be removed in the future.")
-        public val isShutDowning: Boolean
-            get() = !job.isActive
+        public val isActive: Boolean
+            get() = job.isActive
     }
 }
 

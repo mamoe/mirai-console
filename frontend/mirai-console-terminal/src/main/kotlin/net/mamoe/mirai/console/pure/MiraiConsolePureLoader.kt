@@ -13,7 +13,7 @@ package net.mamoe.mirai.console.pure
 import net.mamoe.mirai.console.terminal.MiraiConsoleTerminalLoader
 
 @Deprecated(
-    message = "for binary compatibility",
+    message = "Please uer MiraiConsoleTerminalLoader",
     level = DeprecationLevel.ERROR,
     replaceWith = ReplaceWith(
         "MiraiConsoleTerminalLoader",
