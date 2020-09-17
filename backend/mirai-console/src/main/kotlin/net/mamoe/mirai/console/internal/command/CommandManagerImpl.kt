@@ -15,17 +15,11 @@ import kotlinx.coroutines.CoroutineScope
 import net.mamoe.mirai.console.MiraiConsole
 import net.mamoe.mirai.console.command.*
 import net.mamoe.mirai.console.command.Command.Companion.primaryName
-import net.mamoe.mirai.console.internal.util.dropWhileWithFilter
-import net.mamoe.mirai.console.internal.util.mapFirst
 import net.mamoe.mirai.console.command.CommandSender.Companion.toCommandSender
 import net.mamoe.mirai.event.Listener
 import net.mamoe.mirai.event.subscribeAlways
 import net.mamoe.mirai.message.MessageEvent
 import net.mamoe.mirai.message.data.*
-import net.mamoe.mirai.message.data.Message
-import net.mamoe.mirai.message.data.MessageContent
-import net.mamoe.mirai.message.data.asMessageChain
-import net.mamoe.mirai.message.data.content
 import net.mamoe.mirai.utils.MiraiLogger
 import java.util.concurrent.locks.ReentrantLock
 
@@ -68,7 +62,7 @@ internal object CommandManagerImpl : CommandManager, CoroutineScope by Coroutine
             val sender = this.toCommandSender()
 
             // starting parsing
-            fun parseCommandArguments(): Message? {
+            fun parseCommandArguments(): MessageChain? {
                 val botSelector = message.asSequence()
                     .filterIsInstance<MessageContent>()
                     // Skip all space before At(bot)(BotSelector)
@@ -79,36 +73,24 @@ internal object CommandManagerImpl : CommandManager, CoroutineScope by Coroutine
                         // Selector target not match.
                         return null
                     }
-                    // [MessageSource] [N of Empty PlainText (worst)] [At(BotSelector)][Command (need trim-left)]
-                    return message.asSequence()
-                        // Drop [N of Empty PlainText (worst)]
-                        .dropWhileWithFilter(
-                            filter = { it is MessageContent },
-                            predicate = {
-                                when (it) {
-                                    is PlainText -> true
-                                    is At -> null
-                                    else -> false
-                                }
+                    return buildMessageChain {
+                        val iterator = message.iterator()
+                        // Drop selector
+                        looping@ for (element in iterator) {
+                            when (element) {
+                                is MessageSource -> append(element)
+                                is At -> break@looping
                             }
-                        )
-                        // Trim-left
-                        .mapFirst(
-                            predicate = { it is MessageContent },
-                            transform = {
-                                if (it is PlainText)
-                                    PlainText(it.content.trimStart())
-                                else it
-                            }
-                        )
-                        .dropWhileWithFilter(
-                            filter = { it is MessageContent },
-                            predicate = { it is PlainText && it.content.isBlank() }
-                        )
-                        .toList().also { list ->
-                            println(list)
                         }
-                        .asMessageChain()
+                        // Trim left
+                        if (iterator.hasNext()) {
+                            when (val next = iterator.next()) {
+                                is PlainText -> append(PlainText(next.content.trimStart()))
+                                else -> append(next)
+                            }
+                        }
+                        iterator.forEach { append(it) }
+                    }
                 }
                 return message
             }
