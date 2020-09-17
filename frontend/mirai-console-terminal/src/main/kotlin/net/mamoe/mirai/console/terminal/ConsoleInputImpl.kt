@@ -20,7 +20,6 @@ import java.time.LocalDateTime
 import java.time.ZoneId
 import java.time.format.DateTimeFormatter
 import java.util.concurrent.Executors
-import kotlin.coroutines.resume
 import kotlin.coroutines.resumeWithException
 
 
@@ -43,22 +42,27 @@ internal object ConsoleInputImpl : ConsoleInput {
             executingCoroutine = coroutine
             kotlin.runCatching {
                 thread.submit {
-                    lineReader.readLine(
-                        if (hint.isNotEmpty()) {
-                            lineReader.printAbove(
-                                Ansi.ansi()
-                                    .fgCyan()
-                                    .a(LocalDateTime.ofInstant(Instant.now(), ZoneId.systemDefault()).format(format))
-                                    .a(" ")
-                                    .fgMagenta().a(hint)
-                                    .reset()
-                                    .toString()
-                            )
-                            "$hint > "
-                        } else "> "
-                    ).let { result ->
+                    kotlin.runCatching {
+                        lineReader.readLine(
+                            if (hint.isNotEmpty()) {
+                                lineReader.printAbove(
+                                    Ansi.ansi()
+                                        .fgCyan()
+                                        .a(
+                                            LocalDateTime.ofInstant(Instant.now(), ZoneId.systemDefault())
+                                                .format(format)
+                                        )
+                                        .a(" ")
+                                        .fgMagenta().a(hint)
+                                        .reset()
+                                        .toString()
+                                )
+                                "$hint > "
+                            } else "> "
+                        )
+                    }.let { result ->
                         executingCoroutine = null
-                        coroutine.resume(result)
+                        coroutine.resumeWith(result)
                     }
                 }
             }.onFailure { error ->
