@@ -91,7 +91,8 @@ public object BuiltInCommands {
 
         private val closingLock = Mutex()
 
-        internal suspend fun shutdown(sendMessage: suspend (message: String) -> Unit) {
+        @Handler
+        public suspend fun CommandSender.handle() {
             kotlin.runCatching {
                 closingLock.withLock {
                     sendMessage("Stopping mirai-console")
@@ -99,9 +100,7 @@ public object BuiltInCommands {
                         runIgnoreException<CancellationException> { MiraiConsole.job.cancelAndJoin() }
                     }.fold(
                         onSuccess = {
-                            runIgnoreException<EventCancelledException> {
-                                sendMessage("mirai-console stopped successfully.")
-                            }
+                            runIgnoreException<EventCancelledException> { sendMessage("mirai-console stopped successfully.") }
                         },
                         onFailure = {
                             if (it is CancellationException) return@fold
@@ -114,15 +113,9 @@ public object BuiltInCommands {
                             }
                         }
                     )
-                    exitProcess(0)
                 }
             }.exceptionOrNull()?.let(MiraiConsole.mainLogger::error)
-            exitProcess(1)
-        }
-
-        @Handler
-        public suspend fun CommandSender.handle() {
-            shutdown { sendMessage(it) }
+            exitProcess(0)
         }
     }
 

@@ -81,7 +81,7 @@ internal fun startupConsoleThread() {
             } catch (e: CancellationException) {
                 return@launch
             } catch (e: UserInterruptException) {
-                MiraiConsole.shutdown()
+                BuiltInCommands.StopCommand.run { ConsoleCommandSender.handle() }
                 return@launch
             } catch (eof: EndOfFileException) {
                 consoleLogger.warning("Closing input service...")
