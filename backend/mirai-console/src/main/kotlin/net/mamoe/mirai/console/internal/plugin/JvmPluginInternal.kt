@@ -14,12 +14,19 @@ import kotlinx.atomicfu.locks.withLock
 import kotlinx.coroutines.*
 import net.mamoe.mirai.console.MiraiConsole
 import net.mamoe.mirai.console.data.runCatchingLog
+import net.mamoe.mirai.console.extension.PluginComponentStorage
 import net.mamoe.mirai.console.internal.data.mkdir
+import net.mamoe.mirai.console.permission.Permission
+import net.mamoe.mirai.console.permission.PermissionService
+import net.mamoe.mirai.console.permission.PermissionService.Companion.allocatePermissionIdForPlugin
 import net.mamoe.mirai.console.plugin.Plugin
 import net.mamoe.mirai.console.plugin.PluginManager
 import net.mamoe.mirai.console.plugin.PluginManager.INSTANCE.safeLoader
 import net.mamoe.mirai.console.plugin.ResourceContainer.Companion.asResourceContainer
+import net.mamoe.mirai.console.plugin.jvm.AbstractJvmPlugin
 import net.mamoe.mirai.console.plugin.jvm.JvmPlugin
+import net.mamoe.mirai.console.plugin.jvm.JvmPlugin.Companion.onLoad
+import net.mamoe.mirai.console.plugin.name
 import net.mamoe.mirai.console.util.NamedSupervisorJob
 import net.mamoe.mirai.utils.MiraiLogger
 import java.io.File
@@ -35,20 +42,29 @@ internal val <T> T.job: Job where T : CoroutineScope, T : Plugin get() = this.co
  */
 @PublishedApi
 internal abstract class JvmPluginInternal(
-    parentCoroutineContext: CoroutineContext
+    parentCoroutineContext: CoroutineContext,
 ) : JvmPlugin, CoroutineScope {
+
+    @Suppress("LeakingThis")
+    internal val componentStorage: PluginComponentStorage = PluginComponentStorage(this)
+
+    final override val parentPermission: Permission by lazy {
+        PermissionService.INSTANCE.register(
+            PermissionService.INSTANCE.allocatePermissionIdForPlugin(name, "*"),
+            "The base permission"
+        )
+    }
 
     final override var isEnabled: Boolean = false
 
     private val resourceContainerDelegate by lazy { this::class.java.classLoader.asResourceContainer() }
-    override fun getResourceAsStream(path: String): InputStream? = resourceContainerDelegate.getResourceAsStream(path)
+    final override fun getResourceAsStream(path: String): InputStream? =
+        resourceContainerDelegate.getResourceAsStream(path)
 
     // region JvmPlugin
     final override val logger: MiraiLogger by lazy {
-        JarPluginLoaderImpl.logger.runCatchingLog {
-            MiraiConsole.createLogger(
-                "Plugin ${this.description.name}"
-            )
+        BuiltInJvmPluginLoaderImpl.logger.runCatchingLog {
+            MiraiConsole.createLogger(this.description.name)
         }.getOrThrow()
     }
 
@@ -62,11 +78,11 @@ internal abstract class JvmPluginInternal(
         dataFolderPath.toFile()
     }
 
-    override val configFolderPath: Path by lazy {
+    final override val configFolderPath: Path by lazy {
         PluginManager.pluginsConfigPath.resolve(description.name).apply { mkdir() }
     }
 
-    override val configFolder: File by lazy {
+    final override val configFolder: File by lazy {
         configFolderPath.toFile()
     }
 
@@ -86,11 +102,12 @@ internal abstract class JvmPluginInternal(
     }
 
     @Throws(Throwable::class)
-    internal fun internalOnLoad() { // propagate exceptions
-        onLoad()
+    internal fun internalOnLoad(componentStorage: PluginComponentStorage) {
+        onLoad(componentStorage)
     }
 
     internal fun internalOnEnable(): Boolean {
+        parentPermission
         if (!firstRun) refreshCoroutineContext()
         kotlin.runCatching {
             onEnable()
@@ -114,8 +131,10 @@ internal abstract class JvmPluginInternal(
     // for future use
     @Suppress("PropertyName")
     internal val _intrinsicCoroutineContext: CoroutineContext by lazy {
+        this as AbstractJvmPlugin
         CoroutineName("Plugin $dataHolderName")
     }
+
     @JvmField
     internal val coroutineContextInitializer = {
         CoroutineExceptionHandler { context, throwable ->
@@ -127,12 +146,12 @@ internal abstract class JvmPluginInternal(
             .plus(parentCoroutineContext)
             .plus(
                 NamedSupervisorJob(
-                    "Plugin $dataHolderName",
-                    parentCoroutineContext[Job] ?: JarPluginLoaderImpl.coroutineContext[Job]!!
+                    "Plugin ${(this as AbstractJvmPlugin).dataHolderName}",
+                    parentCoroutineContext[Job] ?: BuiltInJvmPluginLoaderImpl.coroutineContext[Job]!!
                 )
             )
             .also {
-                JarPluginLoaderImpl.coroutineContext[Job]!!.invokeOnCompletion {
+                BuiltInJvmPluginLoaderImpl.coroutineContext[Job]!!.invokeOnCompletion {
                     this.cancel()
                 }
             }

@@ -6,7 +6,6 @@ import java.time.Instant
 plugins {
     kotlin("jvm")
     kotlin("plugin.serialization")
-    kotlin("kapt")
     id("java")
     `maven-publish`
     id("com.jfrog.bintray")
@@ -32,7 +31,7 @@ kotlin {
         target.compilations.all {
             kotlinOptions {
                 jvmTarget = "1.8"
-                freeCompilerArgs = freeCompilerArgs + "-Xjvm-default=enable"
+                freeCompilerArgs = freeCompilerArgs + "-Xjvm-default=all"
                 //useIR = true
             }
         }
@@ -46,12 +45,12 @@ kotlin {
             useExperimentalAnnotation("net.mamoe.mirai.utils.MiraiInternalAPI")
             useExperimentalAnnotation("net.mamoe.mirai.utils.MiraiExperimentalAPI")
             useExperimentalAnnotation("net.mamoe.mirai.console.ConsoleFrontEndImplementation")
-            useExperimentalAnnotation("net.mamoe.mirai.console.util.ConsoleExperimentalAPI")
+            useExperimentalAnnotation("net.mamoe.mirai.console.util.ConsoleExperimentalApi")
             useExperimentalAnnotation("kotlin.ExperimentalUnsignedTypes")
             useExperimentalAnnotation("kotlin.experimental.ExperimentalTypeInference")
             useExperimentalAnnotation("kotlin.contracts.ExperimentalContracts")
             useExperimentalAnnotation("kotlinx.serialization.ExperimentalSerializationApi")
-            useExperimentalAnnotation("net.mamoe.mirai.console.util.ConsoleInternalAPI")
+            useExperimentalAnnotation("net.mamoe.mirai.console.util.ConsoleInternalApi")
         }
     }
 }
@@ -81,9 +80,9 @@ dependencies {
     testRuntimeOnly("org.junit.jupiter:junit-jupiter-engine:5.2.0")
 
 
-    val autoService = "1.0-rc7"
-    kapt("com.google.auto.service", "auto-service", autoService)
-    compileOnly("com.google.auto.service", "auto-service-annotations", autoService)
+//    val autoService = "1.0-rc7"
+//    kapt("com.google.auto.service", "auto-service", autoService)
+//    compileOnly("com.google.auto.service", "auto-service-annotations", autoService)
 }
 
 ext.apply {

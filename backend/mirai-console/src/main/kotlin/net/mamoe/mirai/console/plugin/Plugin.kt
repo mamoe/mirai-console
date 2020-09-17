@@ -18,8 +18,8 @@ import net.mamoe.mirai.console.plugin.PluginManager.INSTANCE.enable
 import net.mamoe.mirai.console.plugin.PluginManager.INSTANCE.safeLoader
 import net.mamoe.mirai.console.plugin.description.PluginDependency
 import net.mamoe.mirai.console.plugin.description.PluginDescription
-import net.mamoe.mirai.console.plugin.description.PluginKind
 import net.mamoe.mirai.console.plugin.jvm.JvmPlugin
+import net.mamoe.mirai.console.plugin.loader.PluginLoader
 
 /**
  * 表示一个 mirai-console 插件.
@@ -52,7 +52,7 @@ public interface Plugin : CommandOwner {
 /**
  * 获取 [PluginDescription]
  */
-public inline val Plugin.description: PluginDescription get() = this.safeLoader.getDescription(this)
+public inline val Plugin.description: PluginDescription get() = this.safeLoader.getPluginDescription(this)
 
 /**
  * 获取 [PluginDescription.name`]
@@ -63,11 +63,6 @@ public inline val Plugin.name: String get() = this.description.name
  * 获取 [PluginDescription.version]
  */
 public inline val Plugin.version: Semver get() = this.description.version
-
-/**
- * 获取 [PluginDescription.kind]
- */
-public inline val Plugin.kind: PluginKind get() = this.description.kind
 
 /**
  * 获取 [PluginDescription.info]
@@ -82,4 +77,4 @@ public inline val Plugin.author: String get() = this.description.author
 /**
  * 获取 [PluginDescription.dependencies]
  */
-public inline val Plugin.dependencies: List<PluginDependency> get() = this.description.dependencies
+public inline val Plugin.dependencies: Set<PluginDependency> get() = this.description.dependencies

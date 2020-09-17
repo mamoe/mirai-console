@@ -1,7 +1,6 @@
 plugins {
     kotlin("jvm")
     kotlin("plugin.serialization")
-    kotlin("kapt")
     id("java")
     `maven-publish`
     id("com.jfrog.bintray")
@@ -11,7 +10,7 @@ kotlin {
     target.compilations.all {
         kotlinOptions {
             jvmTarget = "1.8"
-            freeCompilerArgs = freeCompilerArgs + "-Xjvm-default=enable"
+            freeCompilerArgs = freeCompilerArgs + "-Xjvm-default=all"
         }
     }
 
@@ -24,7 +23,7 @@ kotlin {
             languageSettings.progressiveMode = true
             languageSettings.useExperimentalAnnotation("net.mamoe.mirai.utils.MiraiInternalAPI")
             languageSettings.useExperimentalAnnotation("net.mamoe.mirai.utils.MiraiExperimentalAPI")
-            languageSettings.useExperimentalAnnotation("net.mamoe.mirai.console.util.ConsoleExperimentalAPI")
+            languageSettings.useExperimentalAnnotation("net.mamoe.mirai.console.util.ConsoleExperimentalApi")
             languageSettings.useExperimentalAnnotation("net.mamoe.mirai.console.ConsoleFrontEndImplementation")
             languageSettings.useExperimentalAnnotation("kotlin.ExperimentalUnsignedTypes")
             languageSettings.useExperimentalAnnotation("kotlin.experimental.ExperimentalTypeInference")
@@ -46,10 +45,10 @@ dependencies {
     testApi(project(":mirai-console"))
 
 
-    val autoService = "1.0-rc7"
-    kapt("com.google.auto.service", "auto-service", autoService)
-    compileOnly("com.google.auto.service", "auto-service-annotations", autoService)
-    testCompileOnly("com.google.auto.service", "auto-service-annotations", autoService)
+//    val autoService = "1.0-rc7"
+//    kapt("com.google.auto.service", "auto-service", autoService)
+//    compileOnly("com.google.auto.service", "auto-service-annotations", autoService)
+//    testCompileOnly("com.google.auto.service", "auto-service-annotations", autoService)
 }
 
 ext.apply {

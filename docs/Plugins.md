@@ -2,9 +2,9 @@
 
 [`Plugin`]: ../backend/mirai-console/src/main/kotlin/net/mamoe/mirai/console/plugin/Plugin.kt
 [`PluginDescription`]: ../backend/mirai-console/src/main/kotlin/net/mamoe/mirai/console/plugin/description/PluginDescription.kt
-[`PluginLoader`]: ../backend/mirai-console/src/main/kotlin/net/mamoe/mirai/console/plugin/PluginLoader.kt
+[`PluginLoader`]: ../backend/mirai-console/src/main/kotlin/net/mamoe/mirai/console/plugin/loader/PluginLoader.kt
 [`PluginManager`]: ../backend/mirai-console/src/main/kotlin/net/mamoe/mirai/console/plugin/PluginManager.kt
-[`JarPluginLoader`]: ../backend/mirai-console/src/main/kotlin/net/mamoe/mirai/console/plugin/jvm/JarPluginLoader.kt
+[`JvmPluginLoader`]: ../backend/mirai-console/src/main/kotlin/net/mamoe/mirai/console/plugin/jvm/JvmPluginLoader.kt
 [`JvmPlugin`]: ../backend/mirai-console/src/main/kotlin/net/mamoe/mirai/console/plugin/jvm/JvmPlugin.kt
 [`JvmPluginDescription`]: ../backend/mirai-console/src/main/kotlin/net/mamoe/mirai/console/plugin/jvm/JvmPluginDescription.kt
 [`AbstractJvmPlugin`]: ../backend/mirai-console/src/main/kotlin/net/mamoe/mirai/console/plugin/jvm/AbstractJvmPlugin.kt
@@ -26,7 +26,6 @@
 [`RawCommand`]: ../backend/mirai-console/src/main/kotlin/net/mamoe/mirai/console/command/RawCommand.kt
 [`CommandManager`]: ../backend/mirai-console/src/main/kotlin/net/mamoe/mirai/console/command/CommandManager.kt
 
-[`BotManager`]: ../backend/mirai-console/src/main/kotlin/net/mamoe/mirai/console/util/BotManager.kt
 [`Annotations`]: ../backend/mirai-console/src/main/kotlin/net/mamoe/mirai/console/util/Annotations.kt
 [`ConsoleInput`]: ../backend/mirai-console/src/main/kotlin/net/mamoe/mirai/console/util/ConsoleInput.kt
 [`JavaPluginScheduler`]: ../backend/mirai-console/src/main/kotlin/net/mamoe/mirai/console/plugin/jvm/JavaPluginScheduler.kt
@@ -60,11 +59,11 @@ interface Plugin : CommandOwner { // CommandOwner 是空的 interface
 }
 ```
 
-[`Plugin`] 接口拥有强扩展性，以支持 Mirai Console 统一管理使用其他编程语言编写的插件 （详见进阶章节 [实现 PluginLoader](PluginLoader.md)）。
+[`Plugin`] 接口拥有强扩展性，以支持 Mirai Console 统一管理使用其他编程语言编写的插件 （详见进阶章节 [扩展 - PluginLoader](Extensions.md)）。
 
 ## JVM 平台插件接口 - [`JvmPlugin`]
 
-所有的 JVM 插件都必须实现 [`JvmPlugin`]（否则不会被 [`JarPluginLoader`] 加载）。  
+所有的 JVM 插件都必须实现 [`JvmPlugin`]（否则不会被 [`JvmPluginLoader`] 加载）。  
 Mirai Console 提供一些基础的实现，即 [`AbstractJvmPlugin`]，并将 [`JvmPlugin`] 分为 [`KotlinPlugin`] 和 [`JavaPlugin`]。
 
 ### 主类和描述
@@ -75,17 +74,16 @@ Mirai Console 提供一些基础的实现，即 [`AbstractJvmPlugin`]，并将 [
 #### 描述
 插件描述需要在主类构造器传递给 `super`。因此插件不需要 `plugin.yml`, `plugin.xml` 等配置文件来指示信息。
 
-Mirai Console 使用 `ServiceLoader` 加载插件。  
+Mirai Console 使用类似 `ServiceLoader` 的机制加载插件。  
 在 Kotlin，可（[使用 AutoService]）自动配置 service 信息。  
-在 Kotlin 或其他语言，手动创建 service 文件： 在 `jar` 内 `META-INF/services/net.mamoe.mirai.console.plugin.jvm.JvmPlugin` 文件内存放插件主类全名（以纯文本 UTF-8 存储，文件内容只包含一行插件主类全名）.
+在 Kotlin 或其他语言，可手动创建 service 文件： 在 `jar` 内 `META-INF/services/net.mamoe.mirai.console.plugin.jvm.JvmPlugin` 文件内存放插件主类全名（以纯文本 UTF-8 存储，文件内容只包含一行插件主类全名）.
 
 
 有关插件版本号的限制：
 - 插件自身的版本要求遵循 [语义化版本 2.0.0](https://semver.org/lang/zh-CN/) 规范, 合格的版本例如: `1.0.0`, `1.0`, `1.0-M1`, `1.0-pre-1`
 - 插件依赖的版本遵循 [语义化版本 2.0.0](https://semver.org/lang/zh-CN/) 规范, 同时支持 [Apache Ivy 风格表示方法](http://ant.apache.org/ivy/history/latest-milestone/settings/version-matchers.html).
 
-##### 插件名
-插件名仅取决于 `PluginDescription` 提供的 `name`，与主类类名等其他信息无关。
+有关描述的详细信息可在开发时查看源码内文档。
 
 #### 实现 Kotlin 插件主类
 
@@ -94,13 +92,16 @@ Mirai Console 使用 `ServiceLoader` 加载插件。
 - 访问权限为 `public` 或默认 (不指定)
 
 ```kotlin
-@AutoService(JvmPlugin::class) // 如果选用上述自动配置的方法
 object SchedulePlugin : KotlinPlugin(
-    SimpleJvmPluginDescription( // 插件的描述, name 和 version 是必须的
-        name = "Schedule",
+    JvmPluginDescription(
+        id = "org.example.my-schedule-plugin",
         version = "1.0.0",
-        // author, description, ...
-    )
+    ) {
+        name("Schedule")
+        
+        // author("...")
+        // dependsOn("...")
+    }
 ) {
     // ...
 }
@@ -117,10 +118,14 @@ object SchedulePlugin : KotlinPlugin(
 public final class JExample extends JavaPlugin {
     public static final JExample INSTANCE = new JExample(); // 可以像 Kotlin 一样静态初始化单例
     private JExample() {
-        super(new SimpleJvmPluginDescription(
-            "JExample", // name
+        super(new JvmPluginDescriptionBuilder(
+            "org.example.test-plugin", // name
             "1.0.0" // version
-        ));
+        )
+        // .author("...")
+        // .info("...")
+        .build()
+        );
     }
 }
 ```
@@ -133,10 +138,14 @@ public final class JExample extends JavaPlugin {
         return instance;
     }
     public JExample() { // 此时必须 public
-        super(new SimpleJvmPluginDescription(
-            "JExample", // name
+        super(new JvmPluginDescriptionBuilder(
+            "org.example.test-plugin", // id
             "1.0.0" // version
-        ));
+        )
+        // .author("...")
+        // .info("...")
+        .build()
+        );
         instance = this;
     }
 }
@@ -164,9 +173,9 @@ Mirai Console 不提供热加载和热卸载功能，所有插件只能在服务
 
 #### 加载
 
-[`JarPluginLoader`] 调用插件的 `onLoad()`，在 `onLoad()` 正常返回后插件被认为成功加载。
+[`JvmPluginLoader`] 调用插件的 `onLoad()`，在 `onLoad()` 正常返回后插件被认为成功加载。
 
-由于 `onLoad()` 只会被初始化一次，插件可以在该方法内进行一些*一次性*的*初始化*任务。
+由于 `onLoad()` 只会被初始化一次，插件可以在该方法内进行一些*一次性*的*初始化*任务，如 [注册扩展](Extensions.md#注册扩展)。
 
 **在 `onLoad()` 时插件并未处于启用状态，此时插件不能进行监听事件，加载配置等操作。**
 
@@ -174,13 +183,13 @@ Mirai Console 不提供热加载和热卸载功能，所有插件只能在服务
 
 #### 启用
 
-[`JarPluginLoader`] 调用插件的 `onEnable()`，意为启用一个插件。
+[`JvmPluginLoader`] 调用插件的 `onEnable()`，意为启用一个插件。
 
 此时插件可以启动所有协程，事件监听，和其他任务。**但这些任务都应该拥有生命周期管理，详见 [任务生命周期管理](#任务生命周期管理)。**
 
 #### 禁用
 
-[`JarPluginLoader`] 调用插件的 `onDisable()`，意为禁用一个插件。
+[`JvmPluginLoader`] 调用插件的 `onDisable()`，意为禁用一个插件。
 
 插件的任何类和对象都不会被卸载。「禁用」仅表示停止关闭所有正在进行的任务，保存所有数据，停止处理将来的数据。
 
@@ -248,5 +257,31 @@ Java：
 **仅可在插件 onEnable() 时及其之后才能使用这些方法。**  
 **在插件 onDisable() 之后不能使用这些方法。**
 
+#### 使用示例
+
+```kotlin
+object SchedulePlugin : KotlinPlugin(
+    JvmPluginDescription(
+        id = "org.example.my-schedule-plugin",
+        version = "1.0.0",
+    ) {
+        name("Schedule")
+        
+        // author("...")
+        // dependsOn("...")
+    }
+) {
+    // ...
+    
+    override fun onEnable() {
+        MyData.reload() // 仅需此行，保证启动时更新数据，在之后自动存储数据。
+    }
+}
+
+object MyData : AutoSavePluginData() {
+    val value: Map<String, String> by value()
+}
+```
+
 ### 附录：Java 插件的多线程调度器 - [`JavaPluginScheduler`]
-拥有生命周期管理的简单 Java 线程池。
+拥有生命周期管理的简单 Java 线程池。其中所有的任务都会在插件被关闭时自动停止。

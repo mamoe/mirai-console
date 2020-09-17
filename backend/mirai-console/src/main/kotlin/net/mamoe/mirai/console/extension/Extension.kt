@@ -11,20 +11,46 @@ package net.mamoe.mirai.console.extension
 
 import net.mamoe.mirai.console.extensions.PermissionServiceProvider
 import net.mamoe.mirai.console.extensions.PluginLoaderProvider
-import net.mamoe.mirai.console.util.ConsoleExperimentalAPI
+import net.mamoe.mirai.console.extensions.SingletonExtensionSelector
+import net.mamoe.mirai.console.extensions.SingletonExtensionSelector.ExtensionPoint.selectSingleton
+import net.mamoe.mirai.console.plugin.jvm.JvmPlugin
+import net.mamoe.mirai.console.plugin.jvm.JvmPlugin.Companion.onLoad
 
-@ConsoleExperimentalAPI
+/**
+ * 表示一个扩展.
+ *
+ * ### 获取扩展
+ * Console 不允许插件获取自己或其他插件注册的扩展
+ *
+ * ### 注册扩展
+ * 插件仅能在 [JvmPlugin.onLoad] 阶段注册扩展
+ *
+ * ```kotlin
+ * object MyPlugin : KotlinPlugin( /* ... */ ) {
+ *     fun PluginComponentStorage.onLoad() {
+ *         contributePermissionService { /* ... */ }
+ *         contributePluginLoader { /* ... */ }
+ *         contribute(ExtensionPoint) { /* ... */ }
+ *     }
+ * }
+ * ```
+ *
+ * @see ComponentStorage
+ */
 public interface Extension
 
-@ConsoleExperimentalAPI
+/**
+ * 增加一些函数 (方法)的扩展
+ */
 public interface FunctionExtension : Extension
 
 /**
  * 为某单例服务注册的 [Extension].
  *
+ * 若同时有多个实例可用, 将会使用 [SingletonExtensionSelector.selectSingleton] 选择
+ *
  * @see PermissionServiceProvider
  */
-@ConsoleExperimentalAPI
 public interface SingletonExtension<T> : Extension {
     public val instance: T
 }
@@ -34,7 +60,6 @@ public interface SingletonExtension<T> : Extension {
  *
  * @see PluginLoaderProvider
  */
-@ConsoleExperimentalAPI
 public interface InstanceExtension<T> : Extension {
     public val instance: T
 }

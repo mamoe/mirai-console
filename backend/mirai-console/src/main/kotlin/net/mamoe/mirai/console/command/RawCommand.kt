@@ -14,6 +14,8 @@ package net.mamoe.mirai.console.command
 import net.mamoe.mirai.console.command.CommandManager.INSTANCE.execute
 import net.mamoe.mirai.console.command.CommandManager.INSTANCE.executeCommand
 import net.mamoe.mirai.console.command.java.JRawCommand
+import net.mamoe.mirai.console.internal.command.createOrFindCommandPermission
+import net.mamoe.mirai.console.permission.Permission
 import net.mamoe.mirai.message.data.MessageChain
 
 /**
@@ -39,11 +41,13 @@ public abstract class RawCommand(
     public override val usage: String = "<no usages given>",
     /** 指令描述, 用于显示在 [BuiltInCommands.Help] */
     public override val description: String = "<no descriptions given>",
-    /** 指令权限 */
-    public override val permission: CommandPermission = CommandPermission.Default,
+    /** 指令父权限 */
+    parentPermission: Permission = owner.parentPermission,
     /** 为 `true` 时表示 [指令前缀][CommandManager.commandPrefix] 可选 */
-    public override val prefixOptional: Boolean = false
+    public override val prefixOptional: Boolean = false,
 ) : Command {
+    public override val permission: Permission by lazy { createOrFindCommandPermission(parentPermission) }
+
     /**
      * 在指令被执行时调用.
      *

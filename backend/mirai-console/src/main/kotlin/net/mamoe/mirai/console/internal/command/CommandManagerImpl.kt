@@ -116,7 +116,7 @@ internal object CommandManagerImpl : CommandManager, CoroutineScope by Coroutine
                 parseCommandArguments() ?: return@subscribeAlways
             )) {
                 is CommandExecuteResult.PermissionDenied -> {
-                    if (!result.command.prefixOptional) {
+                    if (!result.command.prefixOptional || message.content.startsWith(CommandManager.commandPrefix)) {
                         sender.sendMessage("权限不足")
                         intercept()
                     }
@@ -149,7 +149,11 @@ internal object CommandManagerImpl : CommandManager, CoroutineScope by Coroutine
     }
 
     override fun Command.register(override: Boolean): Boolean {
-        if (this is CompositeCommand) this.subCommands // init
+        if (this is CompositeCommand) this.subCommands // init lazy
+        this.permission // init lazy
+        this.names // init lazy
+        this.description // init lazy
+        this.usage // init lazy
 
         modifyLock.withLock {
             if (!override) {

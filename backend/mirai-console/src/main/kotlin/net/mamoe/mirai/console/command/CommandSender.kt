@@ -9,7 +9,7 @@
 
 @file:Suppress(
     "NOTHING_TO_INLINE", "INAPPLICABLE_JVM_NAME", "FunctionName", "SuspendFunctionOnCoroutineScope",
-    "unused", "INVISIBLE_REFERENCE", "INVISIBLE_MEMBER"
+    "unused"
 )
 
 package net.mamoe.mirai.console.command
@@ -19,20 +19,21 @@ import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.launch
 import net.mamoe.kjbb.JvmBlockingBridge
 import net.mamoe.mirai.Bot
-import net.mamoe.mirai.console.ConsoleFrontEndImplementation
 import net.mamoe.mirai.console.MiraiConsole
 import net.mamoe.mirai.console.command.CommandManager.INSTANCE.execute
 import net.mamoe.mirai.console.command.CommandSender.Companion.asCommandSender
 import net.mamoe.mirai.console.command.CommandSender.Companion.asMemberCommandSender
 import net.mamoe.mirai.console.command.CommandSender.Companion.asTempCommandSender
 import net.mamoe.mirai.console.command.CommandSender.Companion.toCommandSender
-import net.mamoe.mirai.console.command.ConsoleCommandSender.INSTANCE
 import net.mamoe.mirai.console.command.description.CommandArgumentParserException
 import net.mamoe.mirai.console.internal.MiraiConsoleImplementationBridge
 import net.mamoe.mirai.console.internal.command.qualifiedNameOrTip
 import net.mamoe.mirai.console.internal.data.castOrNull
 import net.mamoe.mirai.console.internal.plugin.rootCauseOrSelf
-import net.mamoe.mirai.console.util.ConsoleExperimentalAPI
+import net.mamoe.mirai.console.permission.AbstractPermitteeId
+import net.mamoe.mirai.console.permission.Permittee
+import net.mamoe.mirai.console.permission.PermitteeId
+import net.mamoe.mirai.console.util.ConsoleExperimentalApi
 import net.mamoe.mirai.console.util.CoroutineScopeUtils.childScope
 import net.mamoe.mirai.console.util.CoroutineScopeUtils.childScopeContext
 import net.mamoe.mirai.console.util.MessageScope
@@ -43,7 +44,6 @@ import net.mamoe.mirai.message.data.PlainText
 import kotlin.contracts.InvocationKind
 import kotlin.contracts.contract
 import kotlin.coroutines.CoroutineContext
-import kotlin.internal.LowPriorityInOverloadResolution
 
 /**
  * 指令发送者.
@@ -132,7 +132,7 @@ import kotlin.internal.LowPriorityInOverloadResolution
  * @see toCommandSender
  * @see asCommandSender
  */
-public interface CommandSender : CoroutineScope {
+public interface CommandSender : CoroutineScope, Permittee {
     /**
      * 与这个 [CommandSender] 相关的 [Bot].
      * 当通过控制台执行时为 `null`.
@@ -175,7 +175,7 @@ public interface CommandSender : CoroutineScope {
     @JvmBlockingBridge
     public suspend fun sendMessage(message: String): MessageReceipt<Contact>?
 
-    @ConsoleExperimentalAPI("This is unstable and might get changed")
+    @ConsoleExperimentalApi("This is unstable and might get changed")
     public suspend fun catchExecutionException(e: Throwable)
 
     public companion object {
@@ -277,7 +277,7 @@ public sealed class AbstractCommandSender : CommandSender, CoroutineScope {
     public abstract override val user: User?
     public abstract override fun toString(): String
 
-    @ConsoleExperimentalAPI("This is unstable and might get changed")
+    @ConsoleExperimentalApi("This is unstable and might get changed")
     override suspend fun catchExecutionException(e: Throwable) {
         if (this is CommandSenderOnMessage<*>) {
             val cause = e.rootCauseOrSelf
@@ -436,7 +436,6 @@ public fun CommandSender.isNotUser(): Boolean {
  * @return [ifIsConsole] 或 [ifIsUser] 执行结果.
  */
 @JvmSynthetic
-@LowPriorityInOverloadResolution
 public inline fun <R> CommandSender.fold(
     ifIsConsole: ConsoleCommandSender.() -> R,
     ifIsUser: UserCommandSender.() -> R,
@@ -459,12 +458,12 @@ public inline fun <R> CommandSender.fold(
  *
  * ### 实验性 API
  *
- * 这是预览版本 API. 如果你对 [UserCommandSender.fold] 有建议, 请在 [mamoe/mirai-console/issues](https://github.com/mamoe/mirai-console/issues/new) 提交.
+ * 这是预览版本 API. 如果你对 [UserCommandSender.foldContext] 有建议, 请在 [mamoe/mirai-console/issues](https://github.com/mamoe/mirai-console/issues/new) 提交.
  *
  * @return [inGroup] 或 [inPrivate] 执行结果.
  */
 @JvmSynthetic
-@ConsoleExperimentalAPI
+@ConsoleExperimentalApi
 public inline fun <R> UserCommandSender.foldContext(
     inGroup: MemberCommandSender.() -> R,
     inPrivate: UserCommandSender.() -> R,
@@ -499,28 +498,30 @@ public fun CommandSender.getBotOrNull(): Bot? {
 
 /**
  * 控制台指令执行者. 代表由控制台执行指令
- * @see INSTANCE
+ *
+ * 控制台拥有一切指令的执行权限.
  */
 // 前端实现
-public abstract class ConsoleCommandSender @ConsoleFrontEndImplementation constructor() : AbstractCommandSender() {
-    public final override val bot: Nothing? get() = null
-    public final override val subject: Nothing? get() = null
-    public final override val user: Nothing? get() = null
-    public final override val name: String get() = NAME
-    public final override fun toString(): String = NAME
+public object ConsoleCommandSender : AbstractCommandSender() {
+    public const val NAME: String = "ConsoleCommandSender"
 
-    public companion object INSTANCE : ConsoleCommandSender(), CoroutineScope {
-        public const val NAME: String = "ConsoleCommandSender"
-        public override val coroutineContext: CoroutineContext by lazy { MiraiConsole.childScopeContext(NAME) }
-        public override suspend fun sendMessage(message: Message): Nothing? {
-            MiraiConsoleImplementationBridge.consoleCommandSender.sendMessage(message)
-            return null
-        }
+    public override val bot: Nothing? get() = null
+    public override val subject: Nothing? get() = null
+    public override val user: Nothing? get() = null
+    public override val name: String get() = NAME
+    public override fun toString(): String = NAME
 
-        public override suspend fun sendMessage(message: String): MessageReceipt<User>? {
-            MiraiConsoleImplementationBridge.consoleCommandSender.sendMessage(message)
-            return null
-        }
+    public override val permitteeId: AbstractPermitteeId.Console = AbstractPermitteeId.Console
+
+    public override val coroutineContext: CoroutineContext by lazy { MiraiConsole.childScopeContext(NAME) }
+    public override suspend fun sendMessage(message: Message): Nothing? {
+        MiraiConsoleImplementationBridge.consoleCommandSender.sendMessage(message)
+        return null
+    }
+
+    public override suspend fun sendMessage(message: String): MessageReceipt<User>? {
+        MiraiConsoleImplementationBridge.consoleCommandSender.sendMessage(message)
+        return null
     }
 }
 
@@ -599,10 +600,12 @@ public sealed class AbstractUserCommandSender : UserCommandSender, AbstractComma
  * @see FriendCommandSenderOnMessage 代表一个真实的 [好友][Friend] 主动在私聊消息执行指令
  */
 public open class FriendCommandSender internal constructor(
-    public final override val user: Friend
+    public final override val user: Friend,
 ) : AbstractUserCommandSender(), CoroutineScope by user.childScope("FriendCommandSender") {
     public override val subject: Contact get() = user
     public override fun toString(): String = "FriendCommandSender($user)"
+
+    public override val permitteeId: PermitteeId = AbstractPermitteeId.ExactFriend(user.id)
 
     @JvmBlockingBridge
     public override suspend fun sendMessage(message: String): MessageReceipt<Friend> = sendMessage(PlainText(message))
@@ -616,13 +619,15 @@ public open class FriendCommandSender internal constructor(
  * @see MemberCommandSenderOnMessage 代表一个真实的 [群员][Member] 主动在群内发送消息执行指令.
  */
 public open class MemberCommandSender internal constructor(
-    public final override val user: Member
+    public final override val user: Member,
 ) : AbstractUserCommandSender(),
     GroupAwareCommandSender,
     CoroutineScope by user.childScope("MemberCommandSender") {
-    public override val group: Group get() = user.group
+    public final override val group: Group get() = user.group
     public override val subject: Group get() = group
     public override fun toString(): String = "MemberCommandSender($user)"
+
+    public override val permitteeId: PermitteeId = AbstractPermitteeId.ExactMember(group.id, user.id)
 
     @JvmBlockingBridge
     public override suspend fun sendMessage(message: String): MessageReceipt<Group> = sendMessage(PlainText(message))
@@ -636,13 +641,16 @@ public open class MemberCommandSender internal constructor(
  * @see TempCommandSenderOnMessage 代表一个 [群员][Member] 主动在临时会话发送消息执行指令
  */
 public open class TempCommandSender internal constructor(
-    public final override val user: Member
+    public final override val user: Member,
 ) : AbstractUserCommandSender(),
     GroupAwareCommandSender,
     CoroutineScope by user.childScope("TempCommandSender") {
     public override val group: Group get() = user.group
     public override val subject: Contact get() = group
     public override fun toString(): String = "TempCommandSender($user)"
+
+    public override val permitteeId: PermitteeId =
+        AbstractPermitteeId.ExactTemp(user.group.id, user.id)
 
     @JvmBlockingBridge
     public override suspend fun sendMessage(message: String): MessageReceipt<Member> = sendMessage(PlainText(message))
@@ -677,7 +685,7 @@ public interface CommandSenderOnMessage<T : MessageEvent> :
  * @see FriendCommandSender 代表一个 [好友][Friend] 执行指令, 但不一定是通过私聊方式
  */
 public class FriendCommandSenderOnMessage internal constructor(
-    public override val fromEvent: FriendMessageEvent
+    public override val fromEvent: FriendMessageEvent,
 ) : FriendCommandSender(fromEvent.sender),
     CommandSenderOnMessage<FriendMessageEvent>,
     MessageEventExtensions<User, Contact> by fromEvent {
@@ -690,7 +698,7 @@ public class FriendCommandSenderOnMessage internal constructor(
  * @see MemberCommandSender 代表一个 [群员][Member] 执行指令, 但不一定是通过群内发消息方式
  */
 public class MemberCommandSenderOnMessage internal constructor(
-    public override val fromEvent: GroupMessageEvent
+    public override val fromEvent: GroupMessageEvent,
 ) : MemberCommandSender(fromEvent.sender),
     CommandSenderOnMessage<GroupMessageEvent>,
     MessageEventExtensions<User, Contact> by fromEvent {
@@ -703,7 +711,7 @@ public class MemberCommandSenderOnMessage internal constructor(
  * @see TempCommandSender 代表一个 [群员][Member] 通过临时会话执行指令, 但不一定是通过私聊方式
  */
 public class TempCommandSenderOnMessage internal constructor(
-    public override val fromEvent: TempMessageEvent
+    public override val fromEvent: TempMessageEvent,
 ) : TempCommandSender(fromEvent.sender),
     CommandSenderOnMessage<TempMessageEvent>,
     MessageEventExtensions<User, Contact> by fromEvent {

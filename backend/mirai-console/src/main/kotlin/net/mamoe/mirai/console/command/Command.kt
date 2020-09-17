@@ -15,7 +15,9 @@ import net.mamoe.kjbb.JvmBlockingBridge
 import net.mamoe.mirai.console.command.CommandManager.INSTANCE.executeCommand
 import net.mamoe.mirai.console.command.CommandManager.INSTANCE.register
 import net.mamoe.mirai.console.command.java.JCommand
+import net.mamoe.mirai.console.internal.command.createOrFindCommandPermission
 import net.mamoe.mirai.console.internal.command.isValidSubName
+import net.mamoe.mirai.console.permission.Permission
 import net.mamoe.mirai.message.data.MessageChain
 import net.mamoe.mirai.message.data.SingleMessage
 
@@ -39,19 +41,19 @@ public interface Command {
     public val names: Array<out String>
 
     /**
-     * 用法说明, 用于发送给用户. 一般 [usage] 包含 [description].
+     * 用法说明, 用于发送给用户. [usage] 一般包含 [description].
      */
     public val usage: String
 
     /**
-     * 指令描述, 用于显示在 [BuiltInCommands.Help]
+     * 指令描述, 用于显示在 [BuiltInCommands.HelpCommand]
      */
     public val description: String
 
     /**
      * 指令权限
      */
-    public val permission: CommandPermission
+    public val permission: Permission
 
     /**
      * 为 `true` 时表示 [指令前缀][CommandManager.commandPrefix] 可选
@@ -86,7 +88,7 @@ public interface Command {
 
 @JvmSynthetic
 public suspend inline fun Command.onCommand(sender: CommandSender, args: MessageChain): Unit =
-    sender.run { onCommand(args) }
+    sender.onCommand(args)
 
 /**
  * [Command] 的基础实现
@@ -95,15 +97,15 @@ public suspend inline fun Command.onCommand(sender: CommandSender, args: Message
  * @see CompositeCommand
  * @see RawCommand
  */
-public abstract class AbstractCommand @JvmOverloads constructor(
+public abstract class AbstractCommand
+@JvmOverloads constructor(
     /** 指令拥有者. */
     public override val owner: CommandOwner,
     vararg names: String,
     description: String = "<no description available>",
-    /** 指令权限 */
-    public override val permission: CommandPermission = CommandPermission.Default,
+    parentPermission: Permission = owner.parentPermission,
     /** 为 `true` 时表示 [指令前缀][CommandManager.commandPrefix] 可选 */
-    public override val prefixOptional: Boolean = false
+    public override val prefixOptional: Boolean = false,
 ) : Command {
     public override val description: String = description.trimIndent()
     public override val names: Array<out String> =
@@ -111,4 +113,5 @@ public abstract class AbstractCommand @JvmOverloads constructor(
             list.firstOrNull { !it.isValidSubName() }?.let { error("Invalid name: $it") }
         }.toTypedArray()
 
+    public override val permission: Permission by lazy { createOrFindCommandPermission(parentPermission) }
 }

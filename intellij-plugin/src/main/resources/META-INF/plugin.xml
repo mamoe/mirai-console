@@ -1,0 +1,34 @@
+<idea-plugin>
+    <id>net.mamoe.mirai-console-dev</id>
+
+    <name>Mirai Console Dev</name>
+
+    <vendor
+            email="support@mamoe.net"
+            url="https://github.com/mamoe/">
+        Mamoe Technologies
+    </vendor>
+
+    <depends>com.intellij.modules.platform</depends>
+    <depends>org.jetbrains.kotlin</depends>
+
+    <extensions defaultExtensionNs="com.intellij">
+        <codeInsight.lineMarkerProvider language="JAVA"
+                                        implementationClass="net.mamoe.mirai.console.intellij.line.marker.PluginMainLineMarkerProvider"/>
+        <codeInsight.lineMarkerProvider language="kotlin"
+                                        implementationClass="net.mamoe.mirai.console.intellij.line.marker.PluginMainLineMarkerProvider"/>
+        <codeInsight.lineMarkerProvider language="JAVA"
+                                        implementationClass="net.mamoe.mirai.console.intellij.line.marker.CommandDeclarationLineMarkerProvider"/>
+        <codeInsight.lineMarkerProvider language="kotlin"
+                                        implementationClass="net.mamoe.mirai.console.intellij.line.marker.CommandDeclarationLineMarkerProvider"/>
+    </extensions>
+
+    <extensions defaultExtensionNs="org.jetbrains.kotlin">
+        <storageComponentContainerContributor
+                implementation="net.mamoe.mirai.console.intellij.IDEContainerContributor"/>
+        <!-- <quickFixContributor implementation="org.jetbrains.kotlinx.serialization.idea.quickfixes.SerializationQuickFixContributor"/> -->
+    </extensions>
+
+    <idea-version since-build="193.*" until-build="203.*"/>
+
+</idea-plugin>
