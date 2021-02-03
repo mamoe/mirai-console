@@ -1,10 +1,10 @@
 /*
- * Copyright 2019-2020 Mamoe Technologies and contributors.
+ * Copyright 2019-2021 Mamoe Technologies and contributors.
  *
- * 此源代码的使用受 GNU AFFERO GENERAL PUBLIC LICENSE version 3 许可证的约束, 可以在以下链接找到该许可证.
- * Use of this source code is governed by the GNU AFFERO GENERAL PUBLIC LICENSE version 3 license that can be found through the following link.
+ *  此源代码的使用受 GNU AFFERO GENERAL PUBLIC LICENSE version 3 许可证的约束, 可以在以下链接找到该许可证.
+ *  Use of this source code is governed by the GNU AGPLv3 license that can be found through the following link.
  *
- * https://github.com/mamoe/mirai/blob/master/LICENSE
+ *  https://github.com/mamoe/mirai/blob/master/LICENSE
  */
 
 @file:Suppress("unused", "INAPPLICABLE_JVM_NAME", "INVISIBLE_REFERENCE", "INVISIBLE_MEMBER")
@@ -13,6 +13,7 @@ package net.mamoe.mirai.console.data
 
 import net.mamoe.mirai.console.data.PluginDataExtensions.withDefault
 import net.mamoe.mirai.console.internal.data.ShadowMap
+import net.mamoe.mirai.console.internal.data.ShadowMap0
 import net.mamoe.mirai.console.util.ConsoleExperimentalApi
 import kotlin.internal.LowPriorityInOverloadResolution
 
@@ -229,7 +230,7 @@ public object PluginDataExtensions {
         return SerializableValue(
             object : CompositeMapValue<NewK, V> {
                 private val instance =
-                    NotNullMutableMap(ShadowMap({ origin.value }, oldToNew, newToOld, { it }, { it }))
+                    NotNullMutableMap(ShadowMap0({ origin.value }, oldToNew, newToOld, { it }, { it }))
 
                 override var value: Map<NewK, V>
                     get() = instance
@@ -256,7 +257,7 @@ public object PluginDataExtensions {
         @Suppress("UNCHECKED_CAST")
         return SerializableValue(
             object : CompositeMapValue<NewK, V> {
-                private val instance = ShadowMap({ origin.value }, oldToNew, newToOld, { it }, { it })
+                private val instance = ShadowMap0({ origin.value }, oldToNew, newToOld, { it }, { it })
 
                 override var value: Map<NewK, V>
                     get() = instance
@@ -312,7 +313,7 @@ public object PluginDataExtensions {
             object : CompositeMapValue<NewK, V> {
                 // casting Map to MutableMap is OK here, as we don't call mutable functions
                 private val instance =
-                    NotNullMap(ShadowMap({ origin.value as MutableMap<OldK, V> }, oldToNew, newToOld, { it }, { it }))
+                    NotNullMap(ShadowMap0({ origin.value as MutableMap<OldK, V> }, oldToNew, newToOld, { it }, { it }))
 
                 override var value: Map<NewK, V>
                     get() = instance
