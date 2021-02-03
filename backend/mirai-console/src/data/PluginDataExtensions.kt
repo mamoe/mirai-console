@@ -13,7 +13,6 @@ package net.mamoe.mirai.console.data
 
 import net.mamoe.mirai.console.data.PluginDataExtensions.withDefault
 import net.mamoe.mirai.console.internal.data.ShadowMap
-import net.mamoe.mirai.console.internal.data.ShadowMap0
 import net.mamoe.mirai.console.util.ConsoleExperimentalApi
 import kotlin.internal.LowPriorityInOverloadResolution
 
@@ -230,7 +229,7 @@ public object PluginDataExtensions {
         return SerializableValue(
             object : CompositeMapValue<NewK, V> {
                 private val instance =
-                    NotNullMutableMap(ShadowMap0({ origin.value }, oldToNew, newToOld, { it }, { it }))
+                    NotNullMutableMap(ShadowMap({ origin.value }, oldToNew, newToOld, { it }, { it }))
 
                 override var value: Map<NewK, V>
                     get() = instance
@@ -257,7 +256,7 @@ public object PluginDataExtensions {
         @Suppress("UNCHECKED_CAST")
         return SerializableValue(
             object : CompositeMapValue<NewK, V> {
-                private val instance = ShadowMap0({ origin.value }, oldToNew, newToOld, { it }, { it })
+                private val instance = ShadowMap({ origin.value }, oldToNew, newToOld, { it }, { it })
 
                 override var value: Map<NewK, V>
                     get() = instance
@@ -313,7 +312,7 @@ public object PluginDataExtensions {
             object : CompositeMapValue<NewK, V> {
                 // casting Map to MutableMap is OK here, as we don't call mutable functions
                 private val instance =
-                    NotNullMap(ShadowMap0({ origin.value as MutableMap<OldK, V> }, oldToNew, newToOld, { it }, { it }))
+                    NotNullMap(ShadowMap({ origin.value as MutableMap<OldK, V> }, oldToNew, newToOld, { it }, { it }))
 
                 override var value: Map<NewK, V>
                     get() = instance

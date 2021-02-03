@@ -18,30 +18,15 @@ import java.util.function.Function
 
 // TODO: 2020/6/24 优化性能: 引入一个 comparator 之类来替代将 Int 包装为 Value<Int> 后进行 containsKey 比较的方法
 
-internal fun <K, V, KR, VR> ShadowMap0(
-    originMapComputer: () -> MutableMap<K, V>,
-    kTransform: (K) -> KR,
-    kTransformBack: (KR) -> K,
-    vTransform: (V) -> VR,
-    vTransformBack: (VR) -> V
-): ShadowMap<K, V, KR, VR> = try {
-    ShadowMapJDK8(originMapComputer, kTransform, kTransformBack, vTransform, vTransformBack)
-} catch (ignored: Throwable) {
-    ShadowMap(originMapComputer, kTransform, kTransformBack, vTransform, vTransformBack)
-}
+// java.util.function was used in mirai-core
+// direct improve apis of java.util.function
 
-internal fun <K, V, KR, VR> ConcurrentShadowMap0(
-    originMapComputer: () -> MutableMap<K, V>,
-    kTransform: (K) -> KR,
-    kTransformBack: (KR) -> K,
-    vTransform: (V) -> VR,
-    vTransformBack: (VR) -> V
-): ShadowMap<K, V, KR, VR> = try {
-    ConcurrentShadowMapJDK8(originMapComputer, kTransform, kTransformBack, vTransform, vTransformBack)
-} catch (ignored: Throwable) {
-    ConcurrentShadowMap(originMapComputer, kTransform, kTransformBack, vTransform, vTransformBack)
-}
 
+@Suppress(
+    "MANY_IMPL_MEMBER_NOT_IMPLEMENTED", "MANY_INTERFACES_MEMBER_NOT_IMPLEMENTED",
+    "UNCHECKED_CAST", "USELESS_CAST", "ACCIDENTAL_OVERRIDE", "TYPE_MISMATCH",
+    "NOTHING_TO_OVERRIDE", "EXPLICIT_OVERRIDE_REQUIRED_IN_MIXED_MODE", "CONFLICTING_INHERITED_JVM_DECLARATIONS",
+) // for improve java.util.function apis
 internal open class ShadowMap<K, V, KR, VR>(
     @JvmField protected val originMapComputer: () -> MutableMap<K, V>,
     @JvmField protected val kTransform: (K) -> KR,
@@ -134,20 +119,6 @@ internal open class ShadowMap<K, V, KR, VR>(
     override fun replace(key: KR, value: VR): VR? =
         originMapComputer().replace(key.let(kTransformBack), value.let(vTransformBack))?.let(vTransform)
 
-}
-
-// java.util.function Maybe not supported on Android
-// @since JDK 1.8+
-@Suppress("NOTHING_TO_OVERRIDE", "ACCIDENTAL_OVERRIDE", "TYPE_MISMATCH")
-internal open class ShadowMapJDK8<K, V, KR, VR>(
-    originMapComputer: () -> MutableMap<K, V>,
-    kTransform: (K) -> KR,
-    kTransformBack: (KR) -> K,
-    vTransform: (V) -> VR,
-    vTransformBack: (VR) -> V
-) : ShadowMap<K, V, KR, VR>(
-    originMapComputer, kTransform, kTransformBack, vTransform, vTransformBack
-) {
     override fun compute(key: KR, remappingFunction: BiFunction<in KR, in VR?, out VR?>): VR? =
         originMapComputer().compute(key.let(kTransformBack)) { k1, v1 ->
             remappingFunction.apply(k1.let(kTransform), v1?.let(vTransform))?.let(vTransformBack)
@@ -163,7 +134,6 @@ internal open class ShadowMapJDK8<K, V, KR, VR>(
             remappingFunction.apply(k.let(kTransform), v.let(vTransform))?.let(vTransformBack)
         }?.let(vTransform)
 
-    @Suppress("TYPE_MISMATCH")
     override fun merge(key: KR, value: VR, remappingFunction: BiFunction<in VR, in VR, out VR?>): VR? =
         originMapComputer().merge(key.let(kTransformBack), value.let(vTransformBack)) { k, v ->
             remappingFunction.apply(k.let(vTransform), v.let(vTransform))?.let(vTransformBack)
@@ -183,6 +153,7 @@ internal open class ShadowMapJDK8<K, V, KR, VR>(
     }
 }
 
+
 @Suppress(
     "MANY_IMPL_MEMBER_NOT_IMPLEMENTED", "MANY_INTERFACES_MEMBER_NOT_IMPLEMENTED",
     "UNCHECKED_CAST", "USELESS_CAST", "ACCIDENTAL_OVERRIDE", "TYPE_MISMATCH",
@@ -198,32 +169,15 @@ internal open class ConcurrentShadowMap<K, V, KR, VR>(
     originMapComputer, kTransform, kTransformBack, vTransform, vTransformBack
 ), ConcurrentMap<KR, VR>
 
-@Suppress(
-    "MANY_IMPL_MEMBER_NOT_IMPLEMENTED", "MANY_INTERFACES_MEMBER_NOT_IMPLEMENTED",
-    "UNCHECKED_CAST", "USELESS_CAST", "ACCIDENTAL_OVERRIDE", "TYPE_MISMATCH",
-    "EXPLICIT_OVERRIDE_REQUIRED_IN_MIXED_MODE", "CONFLICTING_INHERITED_JVM_DECLARATIONS"
-)
-// java.util.function Maybe not supported on Android
-// @since JDK 1.8+
-internal open class ConcurrentShadowMapJDK8<K, V, KR, VR>(
-    originMapComputer: () -> MutableMap<K, V>,
-    kTransform: (K) -> KR,
-    kTransformBack: (KR) -> K,
-    vTransform: (V) -> VR,
-    vTransformBack: (VR) -> V
-) : ShadowMapJDK8<K, V, KR, VR>(
-    originMapComputer, kTransform, kTransformBack, vTransform, vTransformBack
-), ConcurrentMap<KR, VR>
-
 internal fun <K, V, KR, VR> MutableMap<K, V>.shadowMap(
     kTransform: (K) -> KR,
     kTransformBack: (KR) -> K,
     vTransform: (V) -> VR,
     vTransformBack: (VR) -> V
 ): MutableMap<KR, VR> = if (this is ConcurrentMap<K, V>) {
-    ConcurrentShadowMap0({ this }, kTransform, kTransformBack, vTransform, vTransformBack)
+    ConcurrentShadowMap({ this }, kTransform, kTransformBack, vTransform, vTransformBack)
 } else {
-    ShadowMap0({ this }, kTransform, kTransformBack, vTransform, vTransformBack)
+    ShadowMap({ this }, kTransform, kTransformBack, vTransform, vTransformBack)
 }
 
 
@@ -484,10 +438,6 @@ internal fun <K, V> MutableMap<K, V>.observable(onChanged: () -> Unit): MutableM
 
         override fun replace(key: K, value: V): V? =
             this@observable.replace(key, value).also { onChanged() }
-
-    }
-
-    open class ObservableMapJDK8 : ObservableMap() {
         override fun computeIfAbsent(key: K, mappingFunction: Function<in K, out V>): V =
             this@observable.computeIfAbsent(key, mappingFunction).also { onChanged() }
 
@@ -503,18 +453,15 @@ internal fun <K, V> MutableMap<K, V>.observable(onChanged: () -> Unit): MutableM
         override fun merge(key: K, value: V, remappingFunction: BiFunction<in V, in V, out V?>): V? =
             this@observable.merge(key, value, remappingFunction).also { onChanged() }
     }
+
     @Suppress(
         "MANY_IMPL_MEMBER_NOT_IMPLEMENTED", "MANY_INTERFACES_MEMBER_NOT_IMPLEMENTED",
         "UNCHECKED_CAST", "USELESS_CAST", "ACCIDENTAL_OVERRIDE", "TYPE_MISMATCH",
         "EXPLICIT_OVERRIDE_REQUIRED_IN_MIXED_MODE", "CONFLICTING_INHERITED_JVM_DECLARATIONS"
     )
     return if (this is ConcurrentMap<*, *>) {
-        kotlin.runCatching {
-            object : ConcurrentMap<K, V>, MutableMap<K, V>, ObservableMapJDK8() {}
-        }.getOrElse {
-            object : ConcurrentMap<K, V>, MutableMap<K, V>, ObservableMap() {}
-        }
-    } else kotlin.runCatching { ObservableMapJDK8() }.getOrElse { ObservableMap() }
+        object : ConcurrentMap<K, V>, MutableMap<K, V>, ObservableMap() {}
+    } else ObservableMap()
 }
 
 internal inline fun <T> MutableList<T>.observable(crossinline onChanged: () -> Unit): MutableList<T> {
