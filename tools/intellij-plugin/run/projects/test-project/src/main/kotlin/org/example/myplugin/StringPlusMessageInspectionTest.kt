@@ -16,5 +16,5 @@ fun main() {
     val x: String = ""
     val plain: PlainText = PlainText("")
 
-    PlainText(x) + plain
+    run { x.apply { let { also { x } } } } + plain
 }

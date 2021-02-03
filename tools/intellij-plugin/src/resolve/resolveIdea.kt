@@ -19,6 +19,7 @@ import net.mamoe.mirai.console.compiler.common.resolve.*
 import org.jetbrains.kotlin.descriptors.CallableDescriptor
 import org.jetbrains.kotlin.descriptors.ValueParameterDescriptor
 import org.jetbrains.kotlin.descriptors.VariableDescriptor
+import org.jetbrains.kotlin.idea.caches.resolve.analyze
 import org.jetbrains.kotlin.idea.caches.resolve.resolveToDescriptorIfAny
 import org.jetbrains.kotlin.idea.refactoring.fqName.fqName
 import org.jetbrains.kotlin.idea.refactoring.fqName.getKotlinFqName
@@ -203,10 +204,10 @@ val PsiElement.allChildrenFlat: Sequence<PsiElement>
 
 inline fun <reified E> PsiElement.findChild(): E? = this.children.find { it is E } as E?
 
-fun KtElement?.getResolvedCall(
-    context: BindingContext,
+fun KtElement.getResolvedCall(
+    context: BindingContext = analyze(BodyResolveMode.PARTIAL),
 ): ResolvedCall<out CallableDescriptor>? {
-    return this?.getCall(context)?.getResolvedCall(context)
+    return this.getCall(context)?.getResolvedCall(context)
 }
 
 val ResolvedCall<out CallableDescriptor>.valueParameters: List<ValueParameterDescriptor> get() = this.resultingDescriptor.valueParameters
