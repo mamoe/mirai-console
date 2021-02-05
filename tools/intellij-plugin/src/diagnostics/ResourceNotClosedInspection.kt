@@ -14,17 +14,12 @@ import com.intellij.codeInspection.ProblemHighlightType
 import com.intellij.codeInspection.ProblemsHolder
 import com.intellij.openapi.editor.Editor
 import com.intellij.openapi.project.Project
-import com.intellij.psi.PsiCallExpression
-import com.intellij.psi.PsiElement
-import com.intellij.psi.PsiElementVisitor
-import com.intellij.psi.PsiFile
+import com.intellij.psi.*
 import net.mamoe.mirai.console.intellij.resolve.*
 import org.jetbrains.kotlin.idea.caches.resolve.resolveToCall
 import org.jetbrains.kotlin.idea.inspections.AbstractKotlinInspection
 import org.jetbrains.kotlin.idea.inspections.KotlinUniversalQuickFix
 import org.jetbrains.kotlin.idea.quickfix.KotlinCrossLanguageQuickFixAction
-import org.jetbrains.kotlin.idea.search.declarationsSearch.findDeepestSuperMethodsKotlinAware
-import org.jetbrains.kotlin.idea.search.declarationsSearch.forEachOverridingElement
 import org.jetbrains.kotlin.idea.search.getKotlinFqName
 import org.jetbrains.kotlin.idea.search.usagesSearch.descriptor
 import org.jetbrains.kotlin.idea.util.ImportInsertHelper
@@ -35,6 +30,7 @@ import org.jetbrains.kotlin.psi.psiUtil.containingClassOrObject
 import org.jetbrains.kotlin.psi.psiUtil.referenceExpression
 import org.jetbrains.kotlin.resolve.calls.callUtil.getCalleeExpressionIfAny
 import org.jetbrains.kotlin.resolve.lazy.BodyResolveMode
+import kotlin.contracts.contract
 
 /*
 private val bundle by lazy {
@@ -70,13 +66,6 @@ fun KtReferenceExpression.resolveCalleeFunction(): KtNamedFunction? {
     if (originalCallee !is KtNamedFunction) return null
 
     return originalCallee
-}
-
-fun KtNamedFunction.findDeepestSuperFunction(): KtNamedFunction {
-    this.forEachOverridingElement { superMember, overridingMember ->
-        true
-    }
-    return findDeepestSuperMethodsKotlinAware(this).lastOrNull() as? KtNamedFunction ?: this
 }
 
 fun KtNamedFunction.isNamedMemberFunctionOf(className: String, functionName: String, extensionReceiver: String? = null): Boolean {
@@ -158,18 +147,24 @@ object ResourceNotClosedInspectionProcessors {
     object FirstArgumentProcessor : Processor {
         private val CONTACT_UPLOAD_IMAGE = FunctionSignature {
             name("uploadImage")
-            dispatchReceiver("net.mamoe.mirai.contact.Contact")
+            dispatchReceiver(CONTACT_FQ_NAME)
+            parameters("net.mamoe.mirai.utils.ExternalResource")
+        }
+        private val CONTACT_UPLOAD_IMAGE_STATIC = FunctionSignature {
+            name("uploadImage")
+            extensionReceiver(CONTACT_FQ_NAME)
+            dispatchReceiver(CONTACT_COMPANION_FQ_NAME)
             parameters("net.mamoe.mirai.utils.ExternalResource")
         }
         private val CONTACT_COMPANION_UPLOAD_IMAGE = FunctionSignature {
             name("uploadImage")
-            extensionReceiver("net.mamoe.mirai.contact.Contact")
+            extensionReceiver(CONTACT_FQ_NAME)
             parameters("net.mamoe.mirai.utils.ExternalResource")
         }
 
         private val CONTACT_COMPANION_SEND_IMAGE = FunctionSignature {
             name("sendImage")
-            extensionReceiver("net.mamoe.mirai.contact.Contact")
+            extensionReceiver(CONTACT_FQ_NAME)
             parameters("net.mamoe.mirai.utils.ExternalResource")
         }
 
@@ -199,7 +194,7 @@ object ResourceNotClosedInspectionProcessors {
                         ImportInsertHelper.getInstance(project).importDescriptor(file, toImport)
                     }
 
-                    val newArgumentText = firstArgumentExpr.dotReceiverExpression()?.text ?: return@LocalQuickFix
+                    val newArgumentText = element.dotReceiverExpression()?.text ?: return@LocalQuickFix
                     callExpr.replace(KtPsiFactory(project).createExpression(buildString {
                         append(callee.name)
                         append('(')
@@ -212,7 +207,58 @@ object ResourceNotClosedInspectionProcessors {
         }
 
         override fun visitPsiExpr(holder: ProblemsHolder, isOnTheFly: Boolean, expr: PsiCallExpression) {
+            if (expr !is PsiMethodCallExpression) return
+            val callee = expr.resolveMethod() ?: return
 
+            val arguments = expr.argumentList.expressions
+            when {
+                callee.hasSignature(CONTACT_UPLOAD_IMAGE) -> {
+                    createFixImpl(
+                        expr = expr,
+                        holder = holder,
+                        argument = arguments.firstOrNull() ?: return,
+                        fileTypeArgument = arguments.getOrNull(1)
+                    ) { it.methodExpression.qualifierExpression?.text ?: "this" }
+                }
+                callee.hasSignature(CONTACT_UPLOAD_IMAGE_STATIC) -> {
+                    createFixImpl(
+                        expr = expr,
+                        holder = holder,
+                        argument = arguments.getOrNull(1) ?: return,
+                        fileTypeArgument = arguments.getOrNull(2)
+                    ) { arguments.getOrNull(0)?.text ?: "this" }
+                }
+            }
+        }
+
+        private fun createFixImpl(
+            expr: PsiMethodCallExpression,
+            holder: ProblemsHolder,
+            argument: PsiExpression,
+            fileTypeArgument: PsiExpression?,
+            replaceForFirstArgument: (expr: PsiMethodCallExpression) -> String,
+        ) {
+            if (!argument.isCallingExternalResourceCreators()) return
+
+            holder.registerResourceNotClosedProblem(
+                argument,
+                LocalQuickFix("修复", argument) {
+                    /*
+                            useImage(Contact.uploadImage(contact, ExternalResource.create(file))); // before
+                            useImage(Contact.uploadImage(contact, file)); // after
+                             */
+                    val factory = project.psiElementFactory ?: return@LocalQuickFix
+                    val reference = factory.createExpressionFromText(
+                        if (fileTypeArgument == null) {
+                            "$CONTACT_FQ_NAME.uploadImage(${replaceForFirstArgument(expr)}, ${argument.argumentList?.expressions?.firstOrNull()?.text ?: ""})"
+                        } else {
+                            "$CONTACT_FQ_NAME.uploadImage(${replaceForFirstArgument(expr)}, ${argument.argumentList?.expressions?.firstOrNull()?.text ?: ""}, ${fileTypeArgument.text})"
+                        },
+                        expr.context
+                    )
+                    expr.replace(reference)
+                }
+            )
         }
     }
 
@@ -228,7 +274,7 @@ object ResourceNotClosedInspectionProcessors {
 
 private val EXTERNAL_RESOURCE_CREATE = FunctionSignature {
     name("create")
-    dispatchReceiver("net.mamoe.mirai.utils.ExternalResource")
+    dispatchReceiver("net.mamoe.mirai.utils.ExternalResource.Companion")
 }
 private val TO_EXTERNAL_RESOURCE = FunctionSignature {
     name("toExternalResource")
@@ -238,6 +284,13 @@ private val TO_EXTERNAL_RESOURCE = FunctionSignature {
 fun KtExpression.isCallingExternalResourceCreators(): Boolean {
     val callExpr = resolveToCall(BodyResolveMode.PARTIAL)?.resultingDescriptor ?: return false
     return callExpr.hasSignature(EXTERNAL_RESOURCE_CREATE) || callExpr.hasSignature(TO_EXTERNAL_RESOURCE)
+}
+
+fun PsiExpression.isCallingExternalResourceCreators(): Boolean {
+    contract { returns() implies (this@isCallingExternalResourceCreators is PsiCallExpression) }
+    if (this !is PsiCallExpression) return false
+    val callee = resolveMethod() ?: return false
+    return callee.hasSignature(EXTERNAL_RESOURCE_CREATE)
 }
 
 private const val FAMILY_NAME = "Mirai console"

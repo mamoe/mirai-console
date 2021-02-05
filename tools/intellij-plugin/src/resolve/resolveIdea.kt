@@ -9,10 +9,8 @@
 
 package net.mamoe.mirai.console.intellij.resolve
 
-import com.intellij.psi.PsiClass
-import com.intellij.psi.PsiDeclarationStatement
-import com.intellij.psi.PsiElement
-import com.intellij.psi.PsiModifierListOwner
+import com.intellij.openapi.project.Project
+import com.intellij.psi.*
 import com.intellij.psi.util.parentsWithSelf
 import net.mamoe.mirai.console.compiler.common.castOrNull
 import net.mamoe.mirai.console.compiler.common.resolve.*
@@ -220,6 +218,9 @@ fun KtElement.getResolvedCall(
 }
 
 val ResolvedCall<out CallableDescriptor>.valueParameters: List<ValueParameterDescriptor> get() = this.resultingDescriptor.valueParameters
+
+val Project.psiElementFactory: PsiElementFactory?
+    get() = PsiElementFactory.getInstance(this)
 
 fun ConstantValue<*>.selfOrChildrenConstantStrings(): Sequence<String> {
     return when (this) {

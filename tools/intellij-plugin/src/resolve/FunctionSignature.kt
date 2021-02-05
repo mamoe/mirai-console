@@ -9,7 +9,10 @@
 
 package net.mamoe.mirai.console.intellij.resolve
 
+import com.intellij.psi.PsiMethod
+import com.intellij.psi.PsiModifier
 import net.mamoe.mirai.console.intellij.diagnostics.resolveReferencedType
+import org.jetbrains.kotlin.asJava.elements.KtLightMethod
 import org.jetbrains.kotlin.descriptors.CallableDescriptor
 import org.jetbrains.kotlin.idea.caches.resolve.resolveToCall
 import org.jetbrains.kotlin.idea.quickfix.createFromUsage.callableBuilder.getReturnTypeReference
@@ -18,7 +21,7 @@ import org.jetbrains.kotlin.idea.search.getKotlinFqName
 import org.jetbrains.kotlin.name.FqName
 import org.jetbrains.kotlin.nj2k.postProcessing.type
 import org.jetbrains.kotlin.psi.KtExpression
-import org.jetbrains.kotlin.psi.KtNamedFunction
+import org.jetbrains.kotlin.psi.KtFunction
 import org.jetbrains.kotlin.psi.psiUtil.containingClassOrObject
 import org.jetbrains.kotlin.resolve.descriptorUtil.fqNameUnsafe
 import org.jetbrains.kotlin.resolve.lazy.BodyResolveMode
@@ -65,22 +68,62 @@ class FunctionSignatureBuilder {
     fun build(): FunctionSignature = FunctionSignature(name, dispatchReceiver, extensionReceiver, parameters, returnType)
 }
 
+fun FunctionSignatureBuilder.dispatchReceiver(dispatchReceiver: FqName) {
+    dispatchReceiver(dispatchReceiver.toString())
+}
 
-fun KtNamedFunction.hasSignature(functionSignature: FunctionSignature): Boolean {
+fun FunctionSignatureBuilder.extensionReceiver(extensionReceiver: FqName) {
+    extensionReceiver(extensionReceiver.toString())
+}
+
+
+fun KtFunction.hasSignature(functionSignature: FunctionSignature): Boolean {
     if (functionSignature.name != null) {
         if (this.name != functionSignature.name) return false
     }
-    if (functionSignature.extensionReceiver != null) {
-        if (this.receiverTypeReference?.resolveReferencedType()?.getKotlinFqName() != functionSignature.extensionReceiver) return false
-    }
     if (functionSignature.dispatchReceiver != null) {
         if (this.containingClassOrObject?.fqName != functionSignature.dispatchReceiver) return false
+    }
+    if (functionSignature.extensionReceiver != null) {
+        if (this.receiverTypeReference?.resolveReferencedType()?.getKotlinFqName() != functionSignature.extensionReceiver) return false
     }
     if (functionSignature.parameters != null) {
         if (this.valueParameters.zip(functionSignature.parameters).any { it.first.type()?.fqName != it.second }) return false
     }
     if (functionSignature.returnType != null) {
         if (this.getReturnTypeReference()?.resolveReferencedType()?.getKotlinFqName() != functionSignature.returnType) return false
+    }
+    return true
+}
+
+fun KtLightMethod.hasSignature(functionSignature: FunctionSignature): Boolean {
+    if (functionSignature.name != null) {
+        if (this.name != functionSignature.name) return false
+    }
+    val parameters = parameterList.parameters.toMutableList()
+    if (functionSignature.dispatchReceiver != null) {
+        val kotlinContainingClassFqn =
+            if (this.modifierList.hasExplicitModifier(PsiModifier.STATIC)) {
+                this.containingClass.kotlinOrigin?.companionObjects?.firstOrNull()?.fqName
+            } else this.containingClass.getKotlinFqName()
+        if (kotlinContainingClassFqn != functionSignature.dispatchReceiver) return false
+    }
+    if (functionSignature.extensionReceiver != null) {
+        val receiver = parameters.removeFirstOrNull() ?: return false
+        if (receiver.type.canonicalText != functionSignature.extensionReceiver.toString()) return false
+    }
+    if (functionSignature.parameters != null) {
+        if (parameters.zip(functionSignature.parameters).any { it.first.type.canonicalText != it.second.toString() }) return false
+    }
+    if (functionSignature.returnType != null) {
+        if (returnType?.canonicalText != functionSignature.returnType.toString()) return false
+    }
+    return true
+}
+
+fun PsiMethod.hasSignature(functionSignature: FunctionSignature): Boolean {
+    if (this is KtLightMethod) {
+        return this.hasSignature(functionSignature)
     }
     return true
 }
