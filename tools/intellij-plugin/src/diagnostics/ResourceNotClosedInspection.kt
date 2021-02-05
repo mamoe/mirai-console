@@ -18,10 +18,7 @@ import com.intellij.psi.PsiCallExpression
 import com.intellij.psi.PsiElement
 import com.intellij.psi.PsiElementVisitor
 import com.intellij.psi.PsiFile
-import net.mamoe.mirai.console.intellij.resolve.FunctionSignature
-import net.mamoe.mirai.console.intellij.resolve.allSuperTypes
-import net.mamoe.mirai.console.intellij.resolve.dotReceiverExpression
-import net.mamoe.mirai.console.intellij.resolve.hasSignature
+import net.mamoe.mirai.console.intellij.resolve.*
 import org.jetbrains.kotlin.idea.caches.resolve.resolveToCall
 import org.jetbrains.kotlin.idea.inspections.AbstractKotlinInspection
 import org.jetbrains.kotlin.idea.inspections.KotlinUniversalQuickFix
@@ -29,6 +26,8 @@ import org.jetbrains.kotlin.idea.quickfix.KotlinCrossLanguageQuickFixAction
 import org.jetbrains.kotlin.idea.search.declarationsSearch.findDeepestSuperMethodsKotlinAware
 import org.jetbrains.kotlin.idea.search.declarationsSearch.forEachOverridingElement
 import org.jetbrains.kotlin.idea.search.getKotlinFqName
+import org.jetbrains.kotlin.idea.search.usagesSearch.descriptor
+import org.jetbrains.kotlin.idea.util.ImportInsertHelper
 import org.jetbrains.kotlin.name.FqName
 import org.jetbrains.kotlin.nj2k.postProcessing.resolve
 import org.jetbrains.kotlin.psi.*
@@ -95,7 +94,7 @@ object ResourceNotClosedInspectionProcessors {
     )
 
     interface Processor {
-        fun visitKtExpr(holder: ProblemsHolder, isOnTheFly: Boolean, expr: KtCallExpression)
+        fun visitKtExpr(holder: ProblemsHolder, isOnTheFly: Boolean, callExpr: KtCallExpression)
         fun visitPsiExpr(holder: ProblemsHolder, isOnTheFly: Boolean, expr: PsiCallExpression)
     }
 
@@ -112,10 +111,10 @@ object ResourceNotClosedInspectionProcessors {
             extensionReceiver("net.mamoe.mirai.utils.ExternalResource")
         }
 
-        override fun visitKtExpr(holder: ProblemsHolder, isOnTheFly: Boolean, expr: KtCallExpression) {
-            val parent = expr.parent
+        override fun visitKtExpr(holder: ProblemsHolder, isOnTheFly: Boolean, callExpr: KtCallExpression) {
+            val parent = callExpr.parent
             if (parent !is KtDotQualifiedExpression) return
-            val callee = expr.resolveCalleeFunction() ?: return
+            val callee = callExpr.resolveCalleeFunction() ?: return
 
             if (!parent.receiverExpression.isCallingExternalResourceCreators()) return
 
@@ -180,14 +179,36 @@ object ResourceNotClosedInspectionProcessors {
             CONTACT_COMPANION_SEND_IMAGE
         )
 
-        override fun visitKtExpr(holder: ProblemsHolder, isOnTheFly: Boolean, expr: KtCallExpression) {
-            val callee = expr.resolveCalleeFunction() ?: return
+        override fun visitKtExpr(holder: ProblemsHolder, isOnTheFly: Boolean, callExpr: KtCallExpression) {
+            val callee = callExpr.resolveCalleeFunction() ?: return
             if (signatures.none { callee.hasSignature(it) }) return
 
-            val firstArgument = expr.valueArguments.firstOrNull() ?: return
-            if (firstArgument.getArgumentExpression()?.isCallingExternalResourceCreators() != true) return
+            val firstArgument = callExpr.valueArguments.firstOrNull() ?: return
+            val firstArgumentExpr = firstArgument.getArgumentExpression()
+            if (firstArgumentExpr?.isCallingExternalResourceCreators() != true) return
 
-            holder.registerResourceNotClosedProblem(firstArgument)
+            holder.registerResourceNotClosedProblem(
+                firstArgument,
+                LocalQuickFix("修复", firstArgumentExpr) {
+                    fun tryAddImport() {
+                        if (file !is KtFile) return
+                        val companion = callee.descriptor?.containingDeclaration?.companionObjectDescriptor() ?: return
+                        val toImport = companion.findMemberFunction(callee.nameAsName ?: return) ?: return
+
+                        // net.mamoe.mirai.contact.Contact.Companion
+                        ImportInsertHelper.getInstance(project).importDescriptor(file, toImport)
+                    }
+
+                    val newArgumentText = firstArgumentExpr.dotReceiverExpression()?.text ?: return@LocalQuickFix
+                    callExpr.replace(KtPsiFactory(project).createExpression(buildString {
+                        append(callee.name)
+                        append('(')
+                        append(newArgumentText)
+                        append(')')
+                    }))
+                    tryAddImport()
+                }
+            )
         }
 
         override fun visitPsiExpr(holder: ProblemsHolder, isOnTheFly: Boolean, expr: PsiCallExpression) {
