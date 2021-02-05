@@ -22,6 +22,7 @@ class ResourceNotClosedInspectionTest {
         //file.toExternalResource().uploadAsImage(contact)
 
         file.toExternalResource().uploadAsImage(contact)
+        file.toExternalResource().sendAsImageTo(contact)
 
         contact.uploadImage(file) // should ok
 

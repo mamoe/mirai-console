@@ -25,6 +25,7 @@ import org.jetbrains.kotlin.lexer.KtTokens
 import org.jetbrains.kotlin.nj2k.postProcessing.resolve
 import org.jetbrains.kotlin.psi.*
 import org.jetbrains.kotlin.psi.psiUtil.containingClassOrObject
+import org.jetbrains.kotlin.psi.psiUtil.getQualifiedExpressionForReceiver
 import org.jetbrains.kotlin.psi.psiUtil.referenceExpression
 import org.jetbrains.kotlin.resolve.calls.callUtil.getCalleeExpressionIfAny
 
@@ -72,7 +73,7 @@ class UsingStringPlusMessageInspection : AbstractKotlinInspection() {
                 }
 
                 if (element is KtNameReferenceExpression) {
-                    val receiver = element.explicitReceiverExpression() ?: return
+                    val receiver = element.getQualifiedExpressionForReceiver() ?: return
                     val replaced = receiver
                         .replace(KtPsiFactory(project).createExpression("net.mamoe.mirai.message.data.PlainText(${receiver.text})"))
                         as? KtElement ?: return
@@ -105,7 +106,7 @@ class UsingStringPlusMessageInspection : AbstractKotlinInspection() {
 
             if (!argumentType.hasSuperType(MESSAGE_FQ_NAME_STR)) return
 
-            val explicitReceiverExpr = expression.explicitReceiverExpression()
+            val explicitReceiverExpr = expression.siblingDotReceiverExpression()
             if (explicitReceiverExpr != null) {
                 holder.registerProblem(
                     explicitReceiverExpr,

@@ -20,13 +20,12 @@ import com.intellij.psi.PsiElementVisitor
 import com.intellij.psi.PsiFile
 import net.mamoe.mirai.console.intellij.resolve.FunctionSignature
 import net.mamoe.mirai.console.intellij.resolve.allSuperTypes
-import net.mamoe.mirai.console.intellij.resolve.explicitReceiverExpression
+import net.mamoe.mirai.console.intellij.resolve.dotReceiverExpression
 import net.mamoe.mirai.console.intellij.resolve.hasSignature
 import org.jetbrains.kotlin.idea.caches.resolve.resolveToCall
 import org.jetbrains.kotlin.idea.inspections.AbstractKotlinInspection
 import org.jetbrains.kotlin.idea.inspections.KotlinUniversalQuickFix
 import org.jetbrains.kotlin.idea.quickfix.KotlinCrossLanguageQuickFixAction
-import org.jetbrains.kotlin.idea.quickfix.KotlinReferenceImporter
 import org.jetbrains.kotlin.idea.search.declarationsSearch.findDeepestSuperMethodsKotlinAware
 import org.jetbrains.kotlin.idea.search.declarationsSearch.forEachOverridingElement
 import org.jetbrains.kotlin.idea.search.getKotlinFqName
@@ -113,10 +112,6 @@ object ResourceNotClosedInspectionProcessors {
             extensionReceiver("net.mamoe.mirai.utils.ExternalResource")
         }
 
-        private val signatures = arrayOf(
-            SEND_AS_IMAGE_TO, UPLOAD_AS_IMAGE
-        )
-
         override fun visitKtExpr(holder: ProblemsHolder, isOnTheFly: Boolean, expr: KtCallExpression) {
             val parent = expr.parent
             if (parent !is KtDotQualifiedExpression) return
@@ -130,14 +125,12 @@ object ResourceNotClosedInspectionProcessors {
 
                 override fun invokeImpl(project: Project, editor: Editor?, file: PsiFile) {
                     if (editor == null) return
-                    val thisExpr = element ?: return
-                    val selectorText = thisExpr.selectorExpression?.text ?: return
-                    val thisReceiverExpr = thisExpr.receiverExpression
+                    val uploadImageExpression = element ?: return
+                    val toExternalExpression = uploadImageExpression.receiverExpression
 
-                    val receiverInThisReceiverExpr = thisReceiverExpr.explicitReceiverExpression() ?: return
+                    val toExternalReceiverExpression = toExternalExpression.dotReceiverExpression() ?: return
 
-                    KotlinReferenceImporter().autoImportReferenceAtCursor(editor, file)
-                    thisExpr.replace(KtPsiFactory(project).createExpression("${receiverInThisReceiverExpr.text}.$functionName($selectorText)"))
+                    toExternalExpression.replace(toExternalReceiverExpression)
                 }
             }
 

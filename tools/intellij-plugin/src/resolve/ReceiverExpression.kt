@@ -12,6 +12,7 @@ package net.mamoe.mirai.console.intellij.resolve
 import org.jetbrains.kotlin.idea.caches.resolve.analyze
 import org.jetbrains.kotlin.idea.util.getFactoryForImplicitReceiverWithSubtypeOf
 import org.jetbrains.kotlin.idea.util.getResolutionScope
+import org.jetbrains.kotlin.psi.KtCallExpression
 import org.jetbrains.kotlin.psi.KtDotQualifiedExpression
 import org.jetbrains.kotlin.psi.KtExpression
 import org.jetbrains.kotlin.psi.KtPsiFactory
@@ -38,12 +39,16 @@ sealed class ReceiverExpression {
     }
 }
 
-fun KtExpression.explicitReceiverExpression(): KtExpression? {
+fun KtCallExpression.siblingDotReceiverExpression(): KtExpression? {
     val dotQualifiedExpression = parent
     if (dotQualifiedExpression is KtDotQualifiedExpression) {
         return dotQualifiedExpression.receiverExpression
     }
     return null
+}
+
+fun KtExpression.dotReceiverExpression(): KtExpression? {
+    return if (this is KtDotQualifiedExpression) receiverExpression else null
 }
 
 /**
