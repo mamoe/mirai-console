@@ -38,6 +38,9 @@ private val bundle by lazy {
 }*/
 
 
+/**
+ * @since 2.4
+ */
 class ResourceNotClosedInspection : AbstractKotlinInspection() {
     override fun buildVisitor(holder: ProblemsHolder, isOnTheFly: Boolean): PsiElementVisitor {
         return object : KtVisitorVoid() {
@@ -89,12 +92,12 @@ object ResourceNotClosedInspectionProcessors {
 
     object KtExtensionProcessor : Processor {
         // net.mamoe.mirai.utils.ExternalResource.Companion.sendAsImage(net.mamoe.mirai.utils.ExternalResource, C, kotlin.coroutines.Continuation<? super net.mamoe.mirai.message.MessageReceipt<? extends C>>)
-        private val SEND_AS_IMAGE_TO = FunctionSignature {
+        val SEND_AS_IMAGE_TO = FunctionSignature {
             name("sendAsImageTo")
             dispatchReceiver("net.mamoe.mirai.utils.ExternalResource.Companion")
             extensionReceiver("net.mamoe.mirai.utils.ExternalResource")
         }
-        private val UPLOAD_AS_IMAGE = FunctionSignature {
+        val UPLOAD_AS_IMAGE = FunctionSignature {
             name("uploadAsImage")
             dispatchReceiver("net.mamoe.mirai.utils.ExternalResource.Companion")
             extensionReceiver("net.mamoe.mirai.utils.ExternalResource")
@@ -145,24 +148,24 @@ object ResourceNotClosedInspectionProcessors {
     }
 
     object FirstArgumentProcessor : Processor {
-        private val CONTACT_UPLOAD_IMAGE = FunctionSignature {
+        val CONTACT_UPLOAD_IMAGE = FunctionSignature {
             name("uploadImage")
             dispatchReceiver(CONTACT_FQ_NAME)
             parameters("net.mamoe.mirai.utils.ExternalResource")
         }
-        private val CONTACT_UPLOAD_IMAGE_STATIC = FunctionSignature {
+        val CONTACT_UPLOAD_IMAGE_STATIC = FunctionSignature {
             name("uploadImage")
             extensionReceiver(CONTACT_FQ_NAME)
             dispatchReceiver(CONTACT_COMPANION_FQ_NAME)
             parameters("net.mamoe.mirai.utils.ExternalResource")
         }
-        private val CONTACT_COMPANION_UPLOAD_IMAGE = FunctionSignature {
+        val CONTACT_COMPANION_UPLOAD_IMAGE = FunctionSignature {
             name("uploadImage")
             extensionReceiver(CONTACT_FQ_NAME)
             parameters("net.mamoe.mirai.utils.ExternalResource")
         }
 
-        private val CONTACT_COMPANION_SEND_IMAGE = FunctionSignature {
+        val CONTACT_COMPANION_SEND_IMAGE = FunctionSignature {
             name("sendImage")
             extensionReceiver(CONTACT_FQ_NAME)
             parameters("net.mamoe.mirai.utils.ExternalResource")

@@ -62,12 +62,16 @@
                          groupKey="group.names.message.issues" enabledByDefault="true" level="WARNING"
                          implementationClass="net.mamoe.mirai.console.intellij.diagnostics.UsingStringPlusMessageInspection"/>
 
-        <!--
         <intentionAction>
-            <className>net.mamoe.mirai.console.intellij.diagnostics.fix.AbuseYellowIntention</className>
-            <category>Mirai</category>
+            <className>net.mamoe.mirai.console.intellij.diagnostics.fix.WrapWithResourceUseCallIntention</className>
+            <category>Mirai console</category>
         </intentionAction>
-        -->
+
+        <intentionAction>
+            <className>net.mamoe.mirai.console.intellij.diagnostics.fix.WrapWithResourceUseCallJavaIntention</className>
+            <category>Mirai console</category>
+        </intentionAction>
+
     </extensions>
 
     <extensions defaultExtensionNs="org.jetbrains.kotlin">

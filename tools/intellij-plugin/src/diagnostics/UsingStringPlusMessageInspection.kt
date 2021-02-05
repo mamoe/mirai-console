@@ -14,6 +14,7 @@ import com.intellij.codeInspection.ProblemsHolder
 import com.intellij.openapi.editor.Editor
 import com.intellij.openapi.project.Project
 import com.intellij.psi.PsiElement
+import com.intellij.psi.PsiElementFactory
 import com.intellij.psi.PsiElementVisitor
 import com.intellij.psi.PsiFile
 import net.mamoe.mirai.console.intellij.resolve.*
@@ -113,7 +114,7 @@ class UsingStringPlusMessageInspection : AbstractKotlinInspection() {
                     DESCRIPTION,
                     ProblemHighlightType.WARNING,
                     LocalQuickFix(CONVERT_TO_PLAIN_TEXT, explicitReceiverExpr) {
-                        element.replaceExpressionAndShortenReferences(project, "net.mamoe.mirai.message.data.PlainText(${element.text})")
+                        element.replaceExpressionAndShortenReferences("net.mamoe.mirai.message.data.PlainText(${element.text})")
                     }
                 )
             } else {
@@ -127,7 +128,6 @@ class UsingStringPlusMessageInspection : AbstractKotlinInspection() {
                         val implicitReceiverText = this.element.implicitExpressionText() ?: return@LocalQuickFix
 
                         this.element.replaceExpressionAndShortenReferences(
-                            project,
                             "net.mamoe.mirai.message.data.PlainText(${implicitReceiverText}).${callExpression.text}"
                         )
                     }
@@ -148,7 +148,7 @@ class UsingStringPlusMessageInspection : AbstractKotlinInspection() {
 }
 
 
-fun KtElement.replaceExpressionAndShortenReferences(project: Project, expression: String) {
-    val replaced = replace(KtPsiFactory(project).createExpression(expression)) as? KtElement ?: return
+fun KtElement.replaceExpressionAndShortenReferences(expression: String) {
+    val replaced = replace(KtPsiFactory(this.project).createExpression(expression)) as? KtElement ?: return
     ShortenReferences.DEFAULT.process(replaced)
 }
