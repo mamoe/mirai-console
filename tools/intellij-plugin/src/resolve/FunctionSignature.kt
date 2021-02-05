@@ -11,14 +11,17 @@ package net.mamoe.mirai.console.intellij.resolve
 
 import net.mamoe.mirai.console.intellij.diagnostics.resolveReferencedType
 import org.jetbrains.kotlin.descriptors.CallableDescriptor
+import org.jetbrains.kotlin.idea.caches.resolve.resolveToCall
 import org.jetbrains.kotlin.idea.quickfix.createFromUsage.callableBuilder.getReturnTypeReference
 import org.jetbrains.kotlin.idea.refactoring.fqName.fqName
 import org.jetbrains.kotlin.idea.search.getKotlinFqName
 import org.jetbrains.kotlin.name.FqName
 import org.jetbrains.kotlin.nj2k.postProcessing.type
+import org.jetbrains.kotlin.psi.KtExpression
 import org.jetbrains.kotlin.psi.KtNamedFunction
 import org.jetbrains.kotlin.psi.psiUtil.containingClassOrObject
 import org.jetbrains.kotlin.resolve.descriptorUtil.fqNameUnsafe
+import org.jetbrains.kotlin.resolve.lazy.BodyResolveMode
 
 inline fun FunctionSignature(builderAction: FunctionSignatureBuilder.() -> Unit): FunctionSignature {
     return FunctionSignatureBuilder().apply(builderAction).build()
@@ -80,6 +83,11 @@ fun KtNamedFunction.hasSignature(functionSignature: FunctionSignature): Boolean 
         if (this.getReturnTypeReference()?.resolveReferencedType()?.getKotlinFqName() != functionSignature.returnType) return false
     }
     return true
+}
+
+fun KtExpression.isCalling(functionSignature: FunctionSignature): Boolean {
+    val descriptor = resolveToCall(BodyResolveMode.PARTIAL)?.resultingDescriptor ?: return false
+    return descriptor.hasSignature(functionSignature)
 }
 
 fun CallableDescriptor.hasSignature(functionSignature: FunctionSignature): Boolean {

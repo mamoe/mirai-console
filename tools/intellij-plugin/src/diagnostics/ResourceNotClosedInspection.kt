@@ -9,16 +9,24 @@
 
 package net.mamoe.mirai.console.intellij.diagnostics
 
+import com.intellij.codeInspection.LocalQuickFix
 import com.intellij.codeInspection.ProblemHighlightType
 import com.intellij.codeInspection.ProblemsHolder
+import com.intellij.openapi.editor.Editor
+import com.intellij.openapi.project.Project
+import com.intellij.psi.PsiCallExpression
 import com.intellij.psi.PsiElement
 import com.intellij.psi.PsiElementVisitor
-import com.intellij.psi.PsiReferenceExpression
-import net.mamoe.mirai.console.compiler.common.castOrNull
-import net.mamoe.mirai.console.intellij.diagnostics.ExternalResourceResolver.isCallingExternalResourceCreators
-import net.mamoe.mirai.console.intellij.resolve.*
+import com.intellij.psi.PsiFile
+import net.mamoe.mirai.console.intellij.resolve.FunctionSignature
+import net.mamoe.mirai.console.intellij.resolve.allSuperTypes
+import net.mamoe.mirai.console.intellij.resolve.explicitReceiverExpression
+import net.mamoe.mirai.console.intellij.resolve.hasSignature
 import org.jetbrains.kotlin.idea.caches.resolve.resolveToCall
 import org.jetbrains.kotlin.idea.inspections.AbstractKotlinInspection
+import org.jetbrains.kotlin.idea.inspections.KotlinUniversalQuickFix
+import org.jetbrains.kotlin.idea.quickfix.KotlinCrossLanguageQuickFixAction
+import org.jetbrains.kotlin.idea.quickfix.KotlinReferenceImporter
 import org.jetbrains.kotlin.idea.search.declarationsSearch.findDeepestSuperMethodsKotlinAware
 import org.jetbrains.kotlin.idea.search.declarationsSearch.forEachOverridingElement
 import org.jetbrains.kotlin.idea.search.getKotlinFqName
@@ -26,20 +34,41 @@ import org.jetbrains.kotlin.name.FqName
 import org.jetbrains.kotlin.nj2k.postProcessing.resolve
 import org.jetbrains.kotlin.psi.*
 import org.jetbrains.kotlin.psi.psiUtil.containingClassOrObject
+import org.jetbrains.kotlin.psi.psiUtil.referenceExpression
 import org.jetbrains.kotlin.resolve.calls.callUtil.getCalleeExpressionIfAny
 import org.jetbrains.kotlin.resolve.lazy.BodyResolveMode
-import java.util.*
 
 /*
 private val bundle by lazy {
     BundleUtil.loadLanguageBundle(PluginMainServiceNotConfiguredInspection::class.java.classLoader, "messages.InspectionGadgetsBundle")!!
 }*/
 
+
+class ResourceNotClosedInspection : AbstractKotlinInspection() {
+    override fun buildVisitor(holder: ProblemsHolder, isOnTheFly: Boolean): PsiElementVisitor {
+        return object : KtVisitorVoid() {
+            override fun visitCallExpression(callExpression: KtCallExpression) {
+                for (processor in ResourceNotClosedInspectionProcessors.processors) {
+                    processor.visitKtExpr(holder, isOnTheFly, callExpression)
+                }
+            }
+
+            override fun visitElement(element: PsiElement) {
+                if (element is PsiCallExpression) {
+                    for (processor in ResourceNotClosedInspectionProcessors.processors) {
+                        processor.visitPsiExpr(holder, isOnTheFly, element)
+                    }
+                }
+            }
+        }
+    }
+}
+
 val CONTACT_FQ_NAME = FqName("net.mamoe.mirai.contact.Contact")
 val CONTACT_COMPANION_FQ_NAME = FqName("net.mamoe.mirai.contact.Contact.Companion")
 
 fun KtReferenceExpression.resolveCalleeFunction(): KtNamedFunction? {
-    val originalCallee = getCalleeExpressionIfAny()?.castOrNull<KtReferenceExpression>()?.resolve() ?: return null
+    val originalCallee = getCalleeExpressionIfAny()?.referenceExpression()?.resolve() ?: return null
     if (originalCallee !is KtNamedFunction) return null
 
     return originalCallee
@@ -59,6 +88,7 @@ fun KtNamedFunction.isNamedMemberFunctionOf(className: String, functionName: Str
     return this.name == functionName && this.containingClassOrObject?.allSuperTypes?.any { it.getKotlinFqName()?.toString() == className } == true
 }
 
+@Suppress("DialogTitleCapitalization")
 object ResourceNotClosedInspectionProcessors {
     val processors = arrayOf(
         FirstArgumentProcessor,
@@ -67,7 +97,7 @@ object ResourceNotClosedInspectionProcessors {
 
     interface Processor {
         fun visitKtExpr(holder: ProblemsHolder, isOnTheFly: Boolean, expr: KtCallExpression)
-        fun visitPsiReferenceExpr(holder: ProblemsHolder, isOnTheFly: Boolean, expr: PsiReferenceExpression)
+        fun visitPsiExpr(holder: ProblemsHolder, isOnTheFly: Boolean, expr: PsiCallExpression)
     }
 
     object KtExtensionProcessor : Processor {
@@ -91,13 +121,44 @@ object ResourceNotClosedInspectionProcessors {
             val parent = expr.parent
             if (parent !is KtDotQualifiedExpression) return
             val callee = expr.resolveCalleeFunction() ?: return
-            if (signatures.none { callee.hasSignature(it) }) return
+
             if (!parent.receiverExpression.isCallingExternalResourceCreators()) return
 
-            holder.registerResourceNotClosedProblem(parent.receiverExpression, parent)
+            class Fix(private val functionName: String) : KotlinCrossLanguageQuickFixAction<KtDotQualifiedExpression>(parent), KotlinUniversalQuickFix {
+                override fun getFamilyName(): String = FAMILY_NAME
+                override fun getText(): String = "修复 $functionName"
+
+                override fun invokeImpl(project: Project, editor: Editor?, file: PsiFile) {
+                    if (editor == null) return
+                    val thisExpr = element ?: return
+                    val selectorText = thisExpr.selectorExpression?.text ?: return
+                    val thisReceiverExpr = thisExpr.receiverExpression
+
+                    val receiverInThisReceiverExpr = thisReceiverExpr.explicitReceiverExpression() ?: return
+
+                    KotlinReferenceImporter().autoImportReferenceAtCursor(editor, file)
+                    thisExpr.replace(KtPsiFactory(project).createExpression("${receiverInThisReceiverExpr.text}.$functionName($selectorText)"))
+                }
+            }
+
+            when {
+                callee.hasSignature(SEND_AS_IMAGE_TO) -> {
+                    // RECEIVER.sendAsImageTo
+                    holder.registerResourceNotClosedProblem(
+                        parent.receiverExpression,
+                        Fix("sendAsImageTo"),
+                    )
+                }
+                callee.hasSignature(UPLOAD_AS_IMAGE) -> {
+                    holder.registerResourceNotClosedProblem(
+                        parent.receiverExpression,
+                        Fix("uploadAsImage"),
+                    )
+                }
+            }
         }
 
-        override fun visitPsiReferenceExpr(holder: ProblemsHolder, isOnTheFly: Boolean, expr: PsiReferenceExpression) {
+        override fun visitPsiExpr(holder: ProblemsHolder, isOnTheFly: Boolean, expr: PsiCallExpression) {
         }
 
     }
@@ -133,47 +194,36 @@ object ResourceNotClosedInspectionProcessors {
             val firstArgument = expr.valueArguments.firstOrNull() ?: return
             if (firstArgument.getArgumentExpression()?.isCallingExternalResourceCreators() != true) return
 
-            holder.registerResourceNotClosedProblem(firstArgument, expr)
+            holder.registerResourceNotClosedProblem(firstArgument)
         }
 
-        override fun visitPsiReferenceExpr(holder: ProblemsHolder, isOnTheFly: Boolean, expr: PsiReferenceExpression) {
+        override fun visitPsiExpr(holder: ProblemsHolder, isOnTheFly: Boolean, expr: PsiCallExpression) {
 
         }
     }
 
-    private fun ProblemsHolder.registerResourceNotClosedProblem(target: PsiElement, callExpr: KtExpression) {
+    private fun ProblemsHolder.registerResourceNotClosedProblem(target: PsiElement, vararg fixes: LocalQuickFix) {
         registerProblem(
             target,
             @Suppress("DialogTitleCapitalization") "资源未关闭",
             ProblemHighlightType.WARNING,
+            *fixes
         )
     }
 }
 
-object ExternalResourceResolver {
-
-    private val EXTERNAL_RESOURCE_CREATE = FunctionSignature {
-        name("create")
-        dispatchReceiver("net.mamoe.mirai.utils.ExternalResource")
-    }
-    private val TO_EXTERNAL_RESOURCE = FunctionSignature {
-        name("toExternalResource")
-        dispatchReceiver("net.mamoe.mirai.utils.ExternalResource.Companion")
-    }
-
-    fun KtExpression.isCallingExternalResourceCreators(): Boolean {
-        val callExpr = resolveToCall(BodyResolveMode.PARTIAL)?.resultingDescriptor ?: return false
-        return callExpr.hasSignature(EXTERNAL_RESOURCE_CREATE) || callExpr.hasSignature(TO_EXTERNAL_RESOURCE)
-    }
+private val EXTERNAL_RESOURCE_CREATE = FunctionSignature {
+    name("create")
+    dispatchReceiver("net.mamoe.mirai.utils.ExternalResource")
+}
+private val TO_EXTERNAL_RESOURCE = FunctionSignature {
+    name("toExternalResource")
+    dispatchReceiver("net.mamoe.mirai.utils.ExternalResource.Companion")
 }
 
-
-class ResourceNotClosedInspection : AbstractKotlinInspection() {
-    override fun buildVisitor(holder: ProblemsHolder, isOnTheFly: Boolean): PsiElementVisitor {
-        return callExpressionVisitor visitor@{ expression ->
-            for (processor in ResourceNotClosedInspectionProcessors.processors) {
-                processor.visitKtExpr(holder, isOnTheFly, expression)
-            }
-        }
-    }
+fun KtExpression.isCallingExternalResourceCreators(): Boolean {
+    val callExpr = resolveToCall(BodyResolveMode.PARTIAL)?.resultingDescriptor ?: return false
+    return callExpr.hasSignature(EXTERNAL_RESOURCE_CREATE) || callExpr.hasSignature(TO_EXTERNAL_RESOURCE)
 }
+
+private const val FAMILY_NAME = "Mirai console"

@@ -20,6 +20,7 @@ import org.jetbrains.kotlin.descriptors.CallableDescriptor
 import org.jetbrains.kotlin.descriptors.ValueParameterDescriptor
 import org.jetbrains.kotlin.descriptors.VariableDescriptor
 import org.jetbrains.kotlin.idea.caches.resolve.analyze
+import org.jetbrains.kotlin.idea.caches.resolve.resolveToCall
 import org.jetbrains.kotlin.idea.caches.resolve.resolveToDescriptorIfAny
 import org.jetbrains.kotlin.idea.refactoring.fqName.fqName
 import org.jetbrains.kotlin.idea.refactoring.fqName.getKotlinFqName
@@ -27,6 +28,7 @@ import org.jetbrains.kotlin.idea.references.KtSimpleNameReference
 import org.jetbrains.kotlin.name.FqName
 import org.jetbrains.kotlin.nj2k.postProcessing.resolve
 import org.jetbrains.kotlin.psi.*
+import org.jetbrains.kotlin.psi.psiUtil.referenceExpression
 import org.jetbrains.kotlin.resolve.BindingContext
 import org.jetbrains.kotlin.resolve.calls.callUtil.getCall
 import org.jetbrains.kotlin.resolve.calls.callUtil.getCalleeExpressionIfAny
@@ -35,6 +37,7 @@ import org.jetbrains.kotlin.resolve.calls.model.ResolvedCall
 import org.jetbrains.kotlin.resolve.constants.ArrayValue
 import org.jetbrains.kotlin.resolve.constants.ConstantValue
 import org.jetbrains.kotlin.resolve.constants.StringValue
+import org.jetbrains.kotlin.resolve.descriptorUtil.fqNameOrNull
 import org.jetbrains.kotlin.resolve.lazy.BodyResolveMode
 import org.jetbrains.kotlin.types.KotlinType
 import org.jetbrains.kotlin.types.typeUtil.supertypes
@@ -203,6 +206,12 @@ val PsiElement.allChildrenFlat: Sequence<PsiElement>
     }
 
 inline fun <reified E> PsiElement.findChild(): E? = this.children.find { it is E } as E?
+
+fun KtValueArgument.type() = getArgumentExpression()?.referenceExpression()?.type()
+fun KtExpression.resultingDescriptor() = resolveToCall(BodyResolveMode.PARTIAL)?.resultingDescriptor
+fun KtExpression.type() = resultingDescriptor()?.returnType
+fun KtReferenceExpression.typeFqName() = type()?.fqName
+fun KtExpression.typeFqName() = referenceExpression()?.typeFqName()
 
 fun KtElement.getResolvedCall(
     context: BindingContext = analyze(BodyResolveMode.PARTIAL),
