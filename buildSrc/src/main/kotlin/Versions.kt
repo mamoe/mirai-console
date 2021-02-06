@@ -12,33 +12,32 @@
 import org.gradle.api.attributes.Attribute
 
 object Versions {
-    const val core = "2.2.2"  // WARNING: This might not be up-to-date since included in mirai build.
-    const val console = "2.2.2"
+    const val core = "2.3.2"  // WARNING: This might not be up-to-date since included in mirai build.
+    const val console = "2.3.2"
     const val consoleGraphical = "0.0.7"
     const val consoleTerminal = console
 
-    const val kotlinCompiler = "1.4.21"
-    const val kotlinStdlib = "1.4.21"
-
-    const val kotlinIntellijPlugin = "203-1.4.21-release-IJ5981.133" // keep to newest as kotlinCompiler
-    const val intellij = "2020.3" // don't update easily unless you want your disk space -= 500MB
+    const val kotlinCompiler = "1.4.30"
+    const val kotlinStdlib = "1.4.30"
 
 
-    const val coroutines = "1.4.0"
-    const val serialization = "1.0.1"
-    const val ktor = "1.5.0"
-    const val atomicFU = "0.14.4"
+    @Suppress("SpellCheckingInspection")
+    const val yamlkt = "0.9.0"
+    const val intellijGradlePlugin = "0.4.16"
+    const val kotlinIntellijPlugin = "203-1.4.30-release-IJ7148.5" // keep to newest as kotlinCompiler
+    const val intellij = "2020.3.2" // don't update easily unless you want your disk space -= 500MB
+
+
+    const val coroutines = "1.4.2"
+    const val serialization = "1.1.0-RC"
+    const val ktor = "1.5.1"
+    const val atomicFU = "0.15.1"
 
     const val androidGradle = "3.6.2"
 
     const val bintray = "1.8.5"
 
     const val blockingBridge = "1.6.0"
-
-    @Suppress("SpellCheckingInspection")
-    const val yamlkt = "0.7.5"
-
-    const val intellijGradlePlugin = "0.4.16"
 }
 
 const val `kotlin-compiler` = "org.jetbrains.kotlin:kotlin-compiler:${Versions.kotlinCompiler}"
