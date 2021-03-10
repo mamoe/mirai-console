@@ -25,6 +25,8 @@ import net.mamoe.mirai.console.util.ConsoleExperimentalApi
 public interface PermissionServiceProvider : SingletonExtension<PermissionService<*>> {
     public companion object ExtensionPoint :
         AbstractSingletonExtensionPoint<PermissionServiceProvider, PermissionService<*>>(PermissionServiceProvider::class, BuiltInPermissionService) {
+        internal var permissionServiceOk = false
+
         @ConsoleExperimentalApi
         public val providerPlugin: Plugin? by lazy {
             GlobalComponentStorage.run {
@@ -33,6 +35,14 @@ public interface PermissionServiceProvider : SingletonExtension<PermissionServic
                 PermissionServiceProvider.getExtensions().find { it.extension.instance === instance }?.plugin
             }
         }
+
+        override val selectedInstance: PermissionService<*>
+            get() {
+                if (!permissionServiceOk) {
+                    error("Permission Service not yet completed")
+                }
+                return super.selectedInstance
+            }
     }
 }
 
