@@ -39,7 +39,7 @@ public interface PermissionServiceProvider : SingletonExtension<PermissionServic
         override val selectedInstance: PermissionService<*>
             get() {
                 if (!permissionServiceOk) {
-                    error("Permission Service not yet completed")
+                    error("PermissionService not yet loaded")
                 }
                 return super.selectedInstance
             }
