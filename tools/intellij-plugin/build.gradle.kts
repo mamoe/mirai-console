@@ -19,11 +19,13 @@ plugins {
 }
 
 repositories {
-    maven("http://maven.aliyun.com/nexus/content/groups/public/")
+    maven("https://maven.aliyun.com/repository/public")
 }
 
 version = Versions.console
 description = "IntelliJ plugin for Mirai Console"
+
+useIr() // JVM fails to compile
 
 // See https://github.com/JetBrains/gradle-intellij-plugin/
 intellij {
@@ -31,9 +33,13 @@ intellij {
     isDownloadSources = true
     updateSinceUntilBuild = false
 
+    sandboxDirectory = projectDir.resolve("run/idea-sandbox").absolutePath
+
     setPlugins(
         "org.jetbrains.kotlin:${Versions.kotlinIntellijPlugin}", // @eap
-        "java"
+        "java",
+        "gradle",
+        "maven"
     )
 }
 
@@ -51,13 +57,6 @@ tasks.getByName("publishPlugin", org.jetbrains.intellij.tasks.PublishTask::class
 
 fun File.resolveMkdir(relative: String): File {
     return this.resolve(relative).apply { mkdirs() }
-}
-
-tasks.withType<org.jetbrains.intellij.tasks.RunIdeTask> {
-    // redirect config and cache files so as not to be cleared by task 'clean'
-    val ideaSandbox = project.file("run/idea-sandbox")
-    configDirectory(ideaSandbox.resolveMkdir("config"))
-    systemDirectory(ideaSandbox.resolveMkdir("system"))
 }
 
 tasks.withType<org.jetbrains.intellij.tasks.PatchPluginXmlTask> {
@@ -85,9 +84,12 @@ tasks.withType<org.jetbrains.intellij.tasks.PatchPluginXmlTask> {
 dependencies {
     api(`jetbrains-annotations`)
     api(`kotlinx-coroutines-jdk8`)
+    api(`kotlinx-coroutines-swing`)
 
     api(project(":mirai-console-compiler-common"))
 
+    compileOnly(`kotlin-stdlib-jdk8`)
     compileOnly(`kotlin-compiler`)
+    compileOnly(`kotlin-reflect`)
     compileOnly(files("libs/ide-common.jar"))
 }
