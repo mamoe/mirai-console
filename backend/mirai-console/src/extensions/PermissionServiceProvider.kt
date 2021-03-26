@@ -36,6 +36,7 @@ public interface PermissionServiceProvider : SingletonExtension<PermissionServic
             }
         }
 
+        @ConsoleExperimentalApi
         override val selectedInstance: PermissionService<*>
             get() {
                 if (!permissionServiceOk) {
