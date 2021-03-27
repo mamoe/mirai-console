@@ -23,6 +23,7 @@ import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.cancel
 import net.mamoe.mirai.console.intellij.assets.Icons
 import net.mamoe.mirai.console.intellij.creator.steps.BuildSystemStep
+import net.mamoe.mirai.console.intellij.creator.steps.OptionsStep
 import net.mamoe.mirai.console.intellij.creator.steps.PluginCoordinatesStep
 
 class MiraiModuleBuilder : JavaModuleBuilder() {
@@ -56,8 +57,8 @@ class MiraiModuleBuilder : JavaModuleBuilder() {
         )
     }
 
-    override fun getCustomOptionsStep(context: WizardContext?, parentDisposable: Disposable?): ModuleWizardStep? =
-        null
+    override fun getCustomOptionsStep(context: WizardContext?, parentDisposable: Disposable?): ModuleWizardStep =
+        OptionsStep()
 
     companion object {
         const val ID = "MIRAI_MODULE"
