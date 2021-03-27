@@ -1,0 +1,20 @@
+package $PACKAGE_NAME
+
+import net.mamoe.mirai.console.plugin.jvm.JvmPluginDescription
+import net.mamoe.mirai.console.plugin.jvm.KotlinPlugin
+import net.mamoe.mirai.utils.info
+
+object $CLASS_NAME : KotlinPlugin(
+    JvmPluginDescription(
+        id = "$ID",
+        name = "$NAME",
+        version = "$VERSION"
+    ) {
+        #if($AUTHOR != "")author($AUTHOR)#end
+        #if($INFO != "")info($INFO)#end
+    }
+) {
+    override fun onEnable() {
+        logger.info { "Plugin loaded" }
+    }
+}

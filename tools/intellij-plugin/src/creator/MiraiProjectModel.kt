@@ -14,14 +14,17 @@ import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Deferred
 import net.mamoe.mirai.console.intellij.creator.MiraiVersionKind.Companion.getMiraiVersionListAsync
 import net.mamoe.mirai.console.intellij.creator.steps.BuildSystemStep
+import net.mamoe.mirai.console.intellij.creator.steps.LanguageType
+import net.mamoe.mirai.console.intellij.creator.tasks.adjustToClassName
 import kotlin.contracts.contract
 
 data class ProjectCoordinates(
-    val groupId: String,
+    val groupId: String, // already checked by pattern
     val artifactId: String,
     val version: String
-)
-
+) {
+    val packageName: String get() = groupId
+}
 
 data class PluginCoordinates(
     val id: String?,
@@ -32,18 +35,29 @@ data class PluginCoordinates(
 )
 
 class MiraiProjectModel private constructor() {
-    // STEP: BuildSystem
+    // STEP: ProjectCreator
 
     var projectCoordinates: ProjectCoordinates? = null
     var buildSystemType: BuildSystemStep.BuildSystemType = BuildSystemStep.BuildSystemType.DEFAULT
-    var languageType: BuildSystemStep.LanguageType = BuildSystemStep.LanguageType.DEFAULT
+    var languageType: LanguageType = LanguageType.DEFAULT
 
     var miraiVersion: String? = null
     var pluginCoordinates: PluginCoordinates? = null
 
+    val mainClassName: String
+        get() = pluginCoordinates?.run { name?.adjustToClassName() ?: id?.adjustToClassName() } ?: "PluginMain"
+
+    val packageName: String get() = projectCoordinates.checkNotNull("projectCoordinates").groupId
+
 
     var availableMiraiVersions: Deferred<Set<MiraiVersion>>? = null
     val availableMiraiVersionsOrFail get() = availableMiraiVersions.checkNotNull("availableMiraiVersions")
+
+    fun checkValuesNotNull() {
+        checkNotNull(miraiVersion) { "miraiVersion" }
+        checkNotNull(pluginCoordinates) { "pluginCoordinates" }
+        checkNotNull(projectCoordinates) { "projectCoordinates" }
+    }
 
     companion object {
         fun create(scope: CoroutineScope): MiraiProjectModel {

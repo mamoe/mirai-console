@@ -11,8 +11,14 @@
 package net.mamoe.mirai.console.intellij.creator.steps
 
 import com.intellij.ide.util.projectWizard.ModuleWizardStep
+import com.intellij.openapi.module.Module
+import com.intellij.openapi.vfs.VirtualFile
 import net.mamoe.mirai.console.intellij.creator.MiraiProjectModel
 import net.mamoe.mirai.console.intellij.creator.ProjectCoordinates
+import net.mamoe.mirai.console.intellij.creator.build.GradleGroovyProjectCreator
+import net.mamoe.mirai.console.intellij.creator.build.GradleKotlinProjectCreator
+import net.mamoe.mirai.console.intellij.creator.build.ProjectCreator
+import net.mamoe.mirai.console.intellij.creator.tasks.PACKAGE_PATTERN
 import net.mamoe.mirai.console.intellij.diagnostics.ContextualParametersChecker.Companion.SEMANTIC_VERSIONING_PATTERN
 import javax.swing.JComboBox
 import javax.swing.JPanel
@@ -29,25 +35,25 @@ class BuildSystemStep(
 
     enum class BuildSystemType {
         GradleKt {
+            override fun createBuildSystem(module: Module, root: VirtualFile, model: MiraiProjectModel): ProjectCreator =
+                GradleKotlinProjectCreator(module, root, model)
+
             override fun toString(): String = "Gradle Kotlin DSL"
         },
         GradleGroovy {
+            override fun createBuildSystem(module: Module, root: VirtualFile, model: MiraiProjectModel): ProjectCreator =
+                GradleGroovyProjectCreator(module, root, model)
+
             override fun toString(): String = "Gradle Groovy DSL"
         }, ;
+
+        abstract fun createBuildSystem(module: Module, root: VirtualFile, model: MiraiProjectModel): ProjectCreator
 
         companion object {
             val DEFAULT = GradleKt
         }
     }
 
-    enum class LanguageType {
-        Kotlin,
-        Java, ;
-
-        companion object {
-            val DEFAULT = Kotlin
-        }
-    }
     private lateinit var panel: JPanel
 
     @field:Validation.NotBlank("Group ID")
@@ -97,8 +103,4 @@ class BuildSystemStep(
     }
 
     override fun validate() = Validation.doValidation(this)
-
-    companion object {
-        private const val PACKAGE_PATTERN = "[a-zA-Z]+[0-9a-zA-Z_]*(\\.[a-zA-Z]+[0-9a-zA-Z_]*)*"
-    }
 }

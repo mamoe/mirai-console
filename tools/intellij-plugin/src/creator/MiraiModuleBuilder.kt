@@ -14,10 +14,18 @@ import com.intellij.ide.util.projectWizard.JavaModuleBuilder
 import com.intellij.ide.util.projectWizard.ModuleWizardStep
 import com.intellij.ide.util.projectWizard.WizardContext
 import com.intellij.openapi.Disposable
+import com.intellij.openapi.application.ApplicationManager
 import com.intellij.openapi.module.JavaModuleType
 import com.intellij.openapi.module.ModuleType
+import com.intellij.openapi.progress.ProgressManager
+import com.intellij.openapi.project.DumbAwareRunnable
+import com.intellij.openapi.project.DumbService
 import com.intellij.openapi.roots.ModifiableRootModel
 import com.intellij.openapi.roots.ui.configuration.ModulesProvider
+import com.intellij.openapi.startup.StartupManager
+import com.intellij.openapi.util.io.FileUtil
+import com.intellij.openapi.vfs.LocalFileSystem
+import com.intellij.openapi.vfs.VirtualFile
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.cancel
@@ -25,6 +33,10 @@ import net.mamoe.mirai.console.intellij.assets.Icons
 import net.mamoe.mirai.console.intellij.creator.steps.BuildSystemStep
 import net.mamoe.mirai.console.intellij.creator.steps.OptionsStep
 import net.mamoe.mirai.console.intellij.creator.steps.PluginCoordinatesStep
+import net.mamoe.mirai.console.intellij.creator.tasks.CreateProjectTask
+import java.nio.file.Files
+import java.nio.file.Path
+import java.nio.file.Paths
 
 class MiraiModuleBuilder : JavaModuleBuilder() {
     override fun getPresentableName() = MiraiModuleType.NAME
@@ -36,7 +48,49 @@ class MiraiModuleBuilder : JavaModuleBuilder() {
     override fun getParentGroup() = MiraiModuleType.NAME
 
     override fun setupRootModel(rootModel: ModifiableRootModel) {
-        super.setupRootModel(rootModel)
+        val project = rootModel.project
+        val (root, vFile) = createAndGetRoot()
+        rootModel.addContentEntry(vFile)
+
+        if (moduleJdk != null) {
+            rootModel.sdk = moduleJdk
+        } else {
+            rootModel.inheritSdk()
+        }
+
+        val r = DumbAwareRunnable {
+            ProgressManager.getInstance().run(CreateProjectTask(root, rootModel.module, model))
+        }
+
+        if (project.isDisposed) return
+
+        if (
+            ApplicationManager.getApplication().isUnitTestMode ||
+            ApplicationManager.getApplication().isHeadlessEnvironment
+        ) {
+            r.run()
+            return
+        }
+
+        if (!project.isInitialized) {
+            StartupManager.getInstance(project).registerPostStartupActivity(r)
+            return
+        }
+
+        DumbService.getInstance(project).runWhenSmart(r)
+    }
+
+    private fun createAndGetRoot(): Pair<Path, VirtualFile> {
+        val temp = contentEntryPath ?: throw IllegalStateException("Failed to get content entry path")
+
+        val pathName = FileUtil.toSystemIndependentName(temp)
+
+        val path = Paths.get(pathName)
+        Files.createDirectories(path)
+        val vFile = LocalFileSystem.getInstance().refreshAndFindFileByPath(pathName)
+            ?: throw IllegalStateException("Failed to refresh and file file: $path")
+
+        return path to vFile
     }
 
     private val scope = CoroutineScope(SupervisorJob())

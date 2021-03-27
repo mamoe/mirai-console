@@ -7,9 +7,10 @@ plugins {
 }
 
 group = "$GROUP_ID"
-version = "0.1.0"
+version = "$VERSION"
 
 repositories {
     #if ($USE_PROXY_REPO) maven("https://maven.aliyun.com/repository/public") #end
+
     mavenCentral()
 }

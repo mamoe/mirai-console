@@ -89,7 +89,12 @@ dependencies {
     api(project(":mirai-console-compiler-common"))
 
     compileOnly(`kotlin-stdlib-jdk8`)
-    compileOnly(`kotlin-compiler`)
-    compileOnly(`kotlin-reflect`)
+    compileOnly("com.jetbrains:ideaIC:${Versions.intellij}")
+    // compileOnly(`kotlin-compiler`)
+
     compileOnly(files("libs/ide-common.jar"))
+    compileOnly(fileTree("build/idea-sandbox/plugins/Kotlin/lib").filter {
+        !it.name.contains("stdlib")
+    })
+    compileOnly(`kotlin-reflect`)
 }
