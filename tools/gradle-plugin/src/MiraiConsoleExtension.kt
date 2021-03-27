@@ -1,10 +1,10 @@
 /*
- * Copyright 2019-2020 Mamoe Technologies and contributors.
+ * Copyright 2019-2021 Mamoe Technologies and contributors.
  *
- * 此源代码的使用受 GNU AFFERO GENERAL PUBLIC LICENSE version 3 许可证的约束, 可以在以下链接找到该许可证.
- * Use of this source code is governed by the GNU AFFERO GENERAL PUBLIC LICENSE version 3 license that can be found through the following link.
+ *  此源代码的使用受 GNU AFFERO GENERAL PUBLIC LICENSE version 3 许可证的约束, 可以在以下链接找到该许可证.
+ *  Use of this source code is governed by the GNU AGPLv3 license that can be found through the following link.
  *
- * https://github.com/mamoe/mirai/blob/master/LICENSE
+ *  https://github.com/mamoe/mirai/blob/master/LICENSE
  */
 
 @file:Suppress("unused", "MemberVisibilityCanBePrivate")
@@ -14,6 +14,7 @@ package net.mamoe.mirai.console.gradle
 import com.github.jengelman.gradle.plugins.shadow.tasks.ShadowJar
 import com.jfrog.bintray.gradle.BintrayExtension
 import com.jfrog.bintray.gradle.BintrayPlugin
+import org.gradle.api.Action
 import org.gradle.api.JavaVersion
 import org.gradle.api.XmlProvider
 import org.gradle.api.plugins.PluginContainer
@@ -28,6 +29,29 @@ import org.gradle.api.publish.maven.MavenPublication
  */
 // must be open
 public open class MiraiConsoleExtension {
+
+    ///////////////////////////////////////////////////////////////////////////
+    // Plugin Description generation
+    ///////////////////////////////////////////////////////////////////////////
+
+    internal val pluginDescriptionActions = mutableListOf<Action<GeneratePluginDescriptionTask>>()
+
+    /**
+     * 配置自动生成 `JvmPluginDescription` 的 "plugin.yml".
+     *
+     * 本函数被调用后就会在之后配置项目时创建相关 task, 通常的 task 名称为 "". "src/main/resources"
+     */
+    public fun pluginDescription(
+        action: Action<GeneratePluginDescriptionTask>
+    ) {
+        pluginDescriptionActions.add(action)
+    }
+
+
+    ///////////////////////////////////////////////////////////////////////////
+    // Dependency configuration
+    ///////////////////////////////////////////////////////////////////////////
+
     /**
      * 为 `true` 时不自动添加 mirai-core-api 的依赖
      *
@@ -124,6 +148,10 @@ public open class MiraiConsoleExtension {
     public fun excludeDependency(group: String, name: String) {
         excludedDependencies.add(ExcludedDependency(group, name))
     }
+
+    ///////////////////////////////////////////////////////////////////////////
+    // Publishing to JCenter
+    ///////////////////////////////////////////////////////////////////////////
 
     /**
      * Bintray 插件成品 JAR 发布 配置.

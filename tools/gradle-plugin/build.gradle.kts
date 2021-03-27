@@ -22,6 +22,7 @@ plugins {
 }
 
 dependencies {
+    implementation(project(":mirai-console-compiler-annotations"))
     compileOnly(gradleApi())
     compileOnly(gradleKotlinDsl())
     compileOnly(kotlin("gradle-plugin-api").toString()) {
