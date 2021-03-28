@@ -25,7 +25,10 @@ repositories {
 version = Versions.console
 description = "IntelliJ plugin for Mirai Console"
 
-useIr() // JVM fails to compile
+// JVM fails to compile
+kotlinCompilations?.forEach { kotlinCompilation ->
+    kotlinCompilation.kotlinOptions.freeCompilerArgs += "-Xuse-ir"
+} // don't use `useIr()`, compatibility with mirai-console dedicated builds
 
 // See https://github.com/JetBrains/gradle-intellij-plugin/
 intellij {
