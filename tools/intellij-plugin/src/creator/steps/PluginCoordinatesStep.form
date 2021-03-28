@@ -114,8 +114,9 @@
           </grid>
         </constraints>
         <properties>
+          <enabled value="false"/>
           <text value=""/>
-          <toolTipText value="依赖的插件列表, 可选"/>
+          <toolTipText value="依赖的插件列表, 还不支持编辑, 请在创建项目后修改"/>
         </properties>
       </component>
       <component id="53007" class="javax.swing.JSeparator">
