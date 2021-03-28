@@ -26,6 +26,7 @@ object FT { // file template
     const val SettingsGradleKts = "Plugin settings.gradle.kts"
     const val SettingsGradle = "Plugin settings.gradle"
 
+    const val GradleProperties = "Gradle gradle.properties"
 
     const val PluginMainKt = "Plugin main class Kotlin.kt"
     const val PluginMainJava = "Plugin main class Java.java"

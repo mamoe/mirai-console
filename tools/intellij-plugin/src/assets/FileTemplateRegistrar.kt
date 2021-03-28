@@ -22,6 +22,8 @@ class FileTemplateRegistrar : com.intellij.ide.fileTemplates.FileTemplateGroupDe
             addTemplate(FileTemplateDescriptor(FT.PluginMainKt))
             addTemplate(FileTemplateDescriptor(FT.PluginMainJava))
 
+            addTemplate(FileTemplateDescriptor(FT.GradleProperties))
+
             addTemplate(FileTemplateDescriptor(FT.SettingsGradleKts))
             addTemplate(FileTemplateDescriptor(FT.SettingsGradle))
 
