@@ -25,6 +25,15 @@ interface ILanguageType {
 }
 
 sealed class LanguageType : ILanguageType {
+    @Suppress("UNCHECKED_CAST")
+    fun <T: String?> escapeString(string: T): T {
+        string ?: return null as T
+        return string
+            .replace("\\", "\\\\")
+            .replace("\n", "\\n")
+            .replace("\"", "\\\"") as T
+    }
+    abstract fun <T: String?> escapeRawString(string: T): T
 
     companion object {
         val DEFAULT = Kotlin
@@ -37,19 +46,26 @@ sealed class LanguageType : ILanguageType {
         override fun pluginMainClassFile(creator: ProjectCreator): NamedFile = creator.model.run {
             return NamedFile(
                 path = "src/main/kotlin/$mainClassSimpleName.kt",
-                content = creator.project.getTemplate(
-                    FT.PluginMainKt,
-                    creator.model.templateProperties
-                )
+                content = creator.project.getTemplate(FT.PluginMainKt, templateProperties)
             )
+        }
+
+        @Suppress("UNCHECKED_CAST")
+        override fun <T : String?> escapeRawString(string: T): T {
+            string ?: return null as T
+            return string.replace("$", "\${'\$'}").replace("\n", "\\n") as T
         }
     }
 
     object Java : LanguageType() {
         override fun toString(): String = "Java" // display in UI
         override val sourceSetDirName: String get() = "java"
-        override fun pluginMainClassFile(creator: ProjectCreator): NamedFile {
-            TODO("Not yet implemented")
+        override fun pluginMainClassFile(creator: ProjectCreator): NamedFile = creator.model.run {
+            return NamedFile(
+                path = "src/main/java/${packageName.replace('.', '/')}/$mainClassSimpleName.java",
+                content = creator.project.getTemplate(FT.PluginMainJava, templateProperties)
+            )
         }
+        override fun <T : String?> escapeRawString(string: T): T = escapeString(string)
     }
 }

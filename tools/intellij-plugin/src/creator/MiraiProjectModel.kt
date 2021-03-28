@@ -86,9 +86,9 @@ val MiraiProjectModel.templateProperties: Map<String, String?>
             "ARTIFACT_ID" to projectCoordinates.artifactId,
 
             "PLUGIN_ID" to pluginCoordinates.id,
-            "PLUGIN_NAME" to pluginCoordinates.name,
-            "PLUGIN_AUTHOR" to pluginCoordinates.author,
-            "PLUGIN_INFO" to pluginCoordinates.info,
+            "PLUGIN_NAME" to languageType.escapeString(pluginCoordinates.name),
+            "PLUGIN_AUTHOR" to languageType.escapeString(pluginCoordinates.author),
+            "PLUGIN_INFO" to languageType.escapeRawString(pluginCoordinates.info),
             "PLUGIN_DEPENDS_ON" to pluginCoordinates.dependsOn,
             "PLUGIN_VERSION" to projectCoordinates.version,
 

@@ -12,11 +12,11 @@ object $CLASS_NAME : KotlinPlugin(
         version = "${PLUGIN_VERSION}",
     ) #if($HAS_DETAILS){
 #end
-#if(${PLUGIN_AUTHOR} != "")author(${PLUGIN_AUTHOR})
+#if(${PLUGIN_AUTHOR} != "")author("${PLUGIN_AUTHOR}")
 #end
-#if(${PLUGIN_DEPENDS_ON} != "")dependsOn(${PLUGIN_DEPENDS_ON})
+#if(${PLUGIN_DEPENDS_ON} != "")dependsOn("${PLUGIN_DEPENDS_ON}")
 #end
-#if(${PLUGIN_INFO} != "")info(${PLUGIN_INFO})
+#if(${PLUGIN_INFO} != "")info("""${PLUGIN_INFO}""")
 #end
 #if($HAS_DETAILS)    }
 #end

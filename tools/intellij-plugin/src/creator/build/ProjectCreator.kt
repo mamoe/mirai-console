@@ -43,6 +43,8 @@ sealed class ProjectCreator(
         filesChanged.add(vf)
     }
 
+    protected fun getTemplate(name: String) = project.getTemplate(name, model.templateProperties)
+
     fun doFinish(indicator: ProgressIndicator) {
         indicator.text2 = "Reformatting files"
         invokeAndWait {
@@ -62,42 +64,27 @@ sealed class ProjectCreator(
 
 sealed class GradleProjectCreator(
     module: Module, root: VirtualFile, model: MiraiProjectModel,
-    private val templateBuildGradle: String,
-    private val templateSettingsGradle: String,
 ) : ProjectCreator(module, root, model) {
-
-    protected inner class TemplatesImpl {
-        val buildGradle: String
-            get() = project.getTemplate(
-                templateBuildGradle,
-                model.templateProperties
-            )
-
-        val settingsGradle: String
-            get() = project.getTemplate(
-                templateSettingsGradle,
-                model.templateProperties
-            )
+    override fun createProject(module: Module, root: VirtualFile, model: MiraiProjectModel) {
+        runWriteActionAndWait {
+            VfsUtil.createDirectoryIfMissing(root, "src/main/${model.languageType.sourceSetDirName}")
+            VfsUtil.createDirectoryIfMissing(root, "src/main/resources")
+            filesChanged += root.writeChild(model.languageType.pluginMainClassFile(this))
+            filesChanged += root.writeChild("src/main/resources/META-INF/services/net.mamoe.mirai.console.plugin.jvm.JvmPlugin", model.mainClassQualifiedName)
+        }
     }
-
-    protected val templates: TemplatesImpl = TemplatesImpl()
 }
 
 class GradleKotlinProjectCreator(
     module: Module, root: VirtualFile, model: MiraiProjectModel,
 ) : GradleProjectCreator(
     module, root, model,
-    FT.BuildGradleKts,
-    FT.SettingsGradleKts,
 ) {
     override fun createProject(module: Module, root: VirtualFile, model: MiraiProjectModel) {
+        super.createProject(module, root, model)
         runWriteActionAndWait {
-            VfsUtil.createDirectoryIfMissing(root, "src/main/${model.languageType.sourceSetDirName}")
-            VfsUtil.createDirectoryIfMissing(root, "src/main/resources")
-            filesChanged += root.writeChild("build.gradle.kts", templates.buildGradle)
-            filesChanged += root.writeChild("settings.gradle.kts", templates.settingsGradle)
-            filesChanged += root.writeChild(model.languageType.pluginMainClassFile(this))
-            filesChanged += root.writeChild("src/main/resources/META-INF/services/net.mamoe.mirai.console.plugin.jvm.JvmPlugin", model.mainClassQualifiedName)
+            filesChanged += root.writeChild("build.gradle.kts", getTemplate(FT.BuildGradleKts))
+            filesChanged += root.writeChild("settings.gradle.kts", getTemplate(FT.SettingsGradleKts))
         }
     }
 }
@@ -106,10 +93,12 @@ class GradleGroovyProjectCreator(
     module: Module, root: VirtualFile, model: MiraiProjectModel,
 ) : GradleProjectCreator(
     module, root, model,
-    FT.BuildGradle,
-    FT.SettingsGradle,
 ) {
     override fun createProject(module: Module, root: VirtualFile, model: MiraiProjectModel) {
-        TODO("Not yet implemented")
+        super.createProject(module, root, model)
+        runWriteActionAndWait {
+            filesChanged += root.writeChild("build.gradle", getTemplate(FT.BuildGradle))
+            filesChanged += root.writeChild("settings.gradle", getTemplate(FT.SettingsGradle))
+        }
     }
 }
