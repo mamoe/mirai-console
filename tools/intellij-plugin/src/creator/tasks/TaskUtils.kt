@@ -23,7 +23,6 @@ import net.mamoe.mirai.console.intellij.creator.steps.NamedFile
 import org.intellij.lang.annotations.Language
 import java.nio.file.Path
 import java.util.concurrent.atomic.AtomicReference
-import kotlin.io.path.pathString
 import kotlin.properties.ReadWriteProperty
 import kotlin.reflect.KProperty
 
@@ -31,7 +30,7 @@ val Path.vfOrNull: VirtualFile?
     get() = LocalFileSystem.getInstance().refreshAndFindFileByPath(this.toAbsolutePath().toString())
 
 val Path.vf: VirtualFile
-    get() = vfOrNull ?: error("Failed to resolve VirtualFile ${this.pathString}")
+    get() = vfOrNull ?: error("Failed to resolve VirtualFile ${this.toAbsolutePath()}")
 
 fun VirtualFile.readText(): String? = if (this.exists() && !this.isDirectory) String(inputStream.use { it.readBytes() }) else null
 fun VirtualFile.readChildText(relative: String): String? = this.resolve(relative)?.readText()
