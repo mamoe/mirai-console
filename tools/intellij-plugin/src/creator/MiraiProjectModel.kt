@@ -16,6 +16,7 @@ import net.mamoe.mirai.console.intellij.creator.MiraiVersionKind.Companion.getMi
 import net.mamoe.mirai.console.intellij.creator.steps.BuildSystemType
 import net.mamoe.mirai.console.intellij.creator.steps.LanguageType
 import net.mamoe.mirai.console.intellij.creator.tasks.adjustToClassName
+import net.mamoe.mirai.console.intellij.creator.tasks.lateinitReadWriteProperty
 import kotlin.contracts.contract
 
 data class ProjectCoordinates(
@@ -44,10 +45,13 @@ class MiraiProjectModel private constructor() {
     var miraiVersion: String? = null
     var pluginCoordinates: PluginCoordinates? = null
 
-    val mainClassName: String
-        get() = pluginCoordinates?.run { name?.adjustToClassName() ?: id?.adjustToClassName() } ?: "PluginMain"
-
-    val packageName: String get() = projectCoordinates.checkNotNull("projectCoordinates").groupId
+    var mainClassQualifiedName: String by lateinitReadWriteProperty { "$packageName.$mainClassSimpleName" }
+    var mainClassSimpleName: String by lateinitReadWriteProperty {
+        pluginCoordinates?.run {
+            name?.adjustToClassName() ?: id?.substringAfterLast('.')?.adjustToClassName()
+        } ?: "PluginMain"
+    }
+    var packageName: String by lateinitReadWriteProperty { projectCoordinates.checkNotNull("projectCoordinates").groupId }
 
 
     var availableMiraiVersions: Deferred<Set<MiraiVersion>>? = null
@@ -66,7 +70,32 @@ class MiraiProjectModel private constructor() {
             }
         }
     }
+
 }
+
+val MiraiProjectModel.templateProperties: Map<String, String?>
+    get() {
+        val projectCoordinates = projectCoordinates!!
+        val pluginCoordinates = pluginCoordinates!!
+        return mapOf(
+            "KOTLIN_VERSION" to KotlinVersion.CURRENT.toString(),
+            "MIRAI_VERSION" to miraiVersion!!,
+            "GROUP_ID" to projectCoordinates.groupId,
+            "VERSION" to projectCoordinates.version,
+            "USE_PROXY_REPO" to "true",
+            "ARTIFACT_ID" to projectCoordinates.artifactId,
+
+            "PLUGIN_ID" to pluginCoordinates.id,
+            "PLUGIN_NAME" to pluginCoordinates.name,
+            "PLUGIN_AUTHOR" to pluginCoordinates.author,
+            "PLUGIN_INFO" to pluginCoordinates.info,
+            "PLUGIN_DEPENDS_ON" to pluginCoordinates.dependsOn,
+            "PLUGIN_VERSION" to projectCoordinates.version,
+
+            "PACKAGE_NAME" to packageName,
+            "CLASS_NAME" to mainClassSimpleName,
+        )
+    }
 
 fun <T : Any> T?.checkNotNull(name: String): T {
     contract {

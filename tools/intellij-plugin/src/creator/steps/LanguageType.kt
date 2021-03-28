@@ -12,6 +12,7 @@ package net.mamoe.mirai.console.intellij.creator.steps
 import net.mamoe.mirai.console.intellij.assets.FT
 import net.mamoe.mirai.console.intellij.creator.build.ProjectCreator
 import net.mamoe.mirai.console.intellij.creator.tasks.getTemplate
+import net.mamoe.mirai.console.intellij.creator.templateProperties
 
 data class NamedFile(
     val path: String,
@@ -31,20 +32,21 @@ sealed class LanguageType : ILanguageType {
     }
 
     object Kotlin : LanguageType() {
+        override fun toString(): String = "Kotlin" // display in UI
         override val sourceSetDirName: String get() = "kotlin"
         override fun pluginMainClassFile(creator: ProjectCreator): NamedFile = creator.model.run {
             return NamedFile(
-                path = "src/main/kotlin/$mainClassName.kt",
+                path = "src/main/kotlin/$mainClassSimpleName.kt",
                 content = creator.project.getTemplate(
                     FT.PluginMainKt,
-                    "PACKAGE_NAME" to packageName,
-                    "CLASS_NAME" to mainClassName,
+                    creator.model.templateProperties
                 )
             )
         }
     }
 
     object Java : LanguageType() {
+        override fun toString(): String = "Java" // display in UI
         override val sourceSetDirName: String get() = "java"
         override fun pluginMainClassFile(creator: ProjectCreator): NamedFile {
             TODO("Not yet implemented")

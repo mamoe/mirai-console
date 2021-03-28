@@ -11,6 +11,7 @@ package net.mamoe.mirai.console.intellij.creator.tasks
 
 import org.junit.jupiter.api.Test
 import kotlin.test.assertEquals
+import kotlin.test.assertTrue
 
 internal class TaskUtilsKtTest {
 
@@ -29,7 +30,7 @@ internal class TaskUtilsKtTest {
 
     @Test
     fun isValidClassName() {
-        useClassNameCases { it.isValidClassName() }
+        useClassNameCases { it.isValidSimpleClassName() }
     }
 
     @Test
@@ -42,14 +43,20 @@ internal class TaskUtilsKtTest {
 
         assertEquals("TestAA", "Test//!@#$%^&*()AA".adjustToClassName())
 
-        assertEquals("_0", "0".adjustToClassName())
-        assertEquals("_0", "_0".adjustToClassName())
-        assertEquals("_0A", "_0A".adjustToClassName())
+        assertEquals(null, "0".adjustToClassName())
+        assertEquals(null, "_0".adjustToClassName())
+        assertEquals(null, "_0A".adjustToClassName())
         assertEquals("A1", "A1".adjustToClassName())
 
         assertEquals("A1", "A_1".adjustToClassName())
         assertEquals("A1", "A-1".adjustToClassName())
 
         assertEquals("MiraiConsoleExample", "mirai-console-example".adjustToClassName())
+    }
+
+    @Test
+    fun qualifiedClassname() {
+        useClassNameCases { it.isValidQualifiedClassName() }
+        assertTrue { "a.b.c".isValidQualifiedClassName() }
     }
 }

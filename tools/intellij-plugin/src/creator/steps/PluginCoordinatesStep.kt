@@ -12,10 +12,16 @@ package net.mamoe.mirai.console.intellij.creator.steps
 
 import com.intellij.ide.util.projectWizard.ModuleWizardStep
 import kotlinx.coroutines.*
+import net.mamoe.mirai.console.compiler.common.CheckerConstants.PLUGIN_ID_PATTERN
 import net.mamoe.mirai.console.intellij.creator.MiraiProjectModel
 import net.mamoe.mirai.console.intellij.creator.MiraiVersionKind
 import net.mamoe.mirai.console.intellij.creator.PluginCoordinates
 import net.mamoe.mirai.console.intellij.creator.checkNotNull
+import net.mamoe.mirai.console.intellij.creator.steps.Validation.NotBlank
+import net.mamoe.mirai.console.intellij.creator.steps.Validation.Pattern
+import net.mamoe.mirai.console.intellij.creator.tasks.QUALIFIED_CLASS_NAME_PATTERN
+import net.mamoe.mirai.console.intellij.creator.tasks.adjustToClassName
+import net.mamoe.mirai.console.intellij.diagnostics.ContextualParametersChecker
 import java.awt.event.ItemEvent
 import java.awt.event.ItemListener
 import javax.swing.*
@@ -26,14 +32,21 @@ class PluginCoordinatesStep(
 
     private lateinit var panel: JPanel
 
-    @field:Validation.NotBlank("ID")
+    @field:NotBlank("ID")
+    @field:Pattern("ID", PLUGIN_ID_PATTERN)
     private lateinit var idField: JTextField
 
+    @field:NotBlank("Main class")
+    @field:Pattern("Main class", QUALIFIED_CLASS_NAME_PATTERN)
+    private lateinit var mainClassField: JTextField
     private lateinit var nameField: JTextField
     private lateinit var authorField: JTextField
     private lateinit var dependsOnField: JTextField
     private lateinit var infoArea: JTextArea
     private lateinit var miraiVersionKindBox: JComboBox<MiraiVersionKind>
+
+    @field:NotBlank("Mirai version")
+    @field:Pattern("Mirai version", ContextualParametersChecker.SEMANTIC_VERSIONING_PATTERN)
     private lateinit var miraiVersionBox: JComboBox<String>
 
     override fun getComponent() = panel
@@ -61,20 +74,15 @@ class PluginCoordinatesStep(
             updateVersionItems()
         }
 
-        fun String.convertCapitalized(): String = buildString {
-            for (char in this@convertCapitalized) {
-                if (char.isUpperCase() && lastOrNull()?.isLetterOrDigit() == true) {
-                    append('-')
-                    append(char.toLowerCase())
-                } else {
-                    append(char)
-                }
-            }
-        }
-
         if (idField.text.isNullOrEmpty()) {
             model.projectCoordinates.checkNotNull("projectCoordinates").run {
                 idField.text = "$groupId.$artifactId"
+            }
+        }
+
+        if (mainClassField.text.isNullOrEmpty()) {
+            model.projectCoordinates.checkNotNull("projectCoordinates").run {
+                mainClassField.text = "$groupId.${artifactId.adjustToClassName()}"
             }
         }
     }
@@ -96,13 +104,16 @@ class PluginCoordinatesStep(
 
     override fun updateDataModel() {
         model.pluginCoordinates = PluginCoordinates(
-            id = idField.text,
-            author = authorField.text.ifBlank { null },
-            name = nameField.text,
-            info = infoArea.text,
-            dependsOn = dependsOnField.text,
+            id = idField.text.trim(),
+            author = authorField.text,
+            name = nameField.text?.trim(),
+            info = infoArea.text?.trim(),
+            dependsOn = dependsOnField.text?.trim(),
         )
-        model.miraiVersion = miraiVersionBox.selectedItem?.toString() ?: "+"
+        model.miraiVersion = miraiVersionBox.selectedItem?.toString()?.trim() ?: "+"
+        model.packageName = mainClassField.text.substringBeforeLast('.')
+        model.mainClassSimpleName = mainClassField.text.substringAfterLast('.')
+        model.mainClassQualifiedName = mainClassField.text
     }
 
     override fun validate(): Boolean {
@@ -110,7 +121,12 @@ class PluginCoordinatesStep(
             Validation.popup("请等待获取版本号", miraiVersionBox)
             return false
         }
-        return Validation.doValidation(this)
+        if (!Validation.doValidation(this)) return false
+        if (!mainClassField.text.contains('.')) {
+            Validation.popup("Main class 需要包含包名", mainClassField)
+            return false
+        }
+        return true
     }
 
     companion object {

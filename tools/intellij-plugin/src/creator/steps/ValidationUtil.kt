@@ -50,12 +50,12 @@ class Validation {
         }
     }
 
-    annotation class Pattern(@Language("RegExp") val value: String) {
+    annotation class Pattern(val tipName: String, @Language("RegExp") val value: String) {
         companion object {
             init {
                 registerValidator<Pattern> { annotation, component ->
-                    if (!component.text.matches(Regex(annotation.value))) {
-                        report("请正确填写 ${annotation.value}")
+                    if (component.text?.matches(Regex(annotation.value)) != true) {
+                        report("请正确填写 ${annotation.tipName}")
                     }
                 }
             }

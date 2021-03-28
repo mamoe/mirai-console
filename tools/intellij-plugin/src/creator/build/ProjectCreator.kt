@@ -19,8 +19,10 @@ import com.intellij.testFramework.writeChild
 import net.mamoe.mirai.console.intellij.assets.FT
 import net.mamoe.mirai.console.intellij.creator.MiraiProjectModel
 import net.mamoe.mirai.console.intellij.creator.tasks.getTemplate
+import net.mamoe.mirai.console.intellij.creator.tasks.invokeAndWait
 import net.mamoe.mirai.console.intellij.creator.tasks.runWriteActionAndWait
 import net.mamoe.mirai.console.intellij.creator.tasks.writeChild
+import net.mamoe.mirai.console.intellij.creator.templateProperties
 import org.jetbrains.kotlin.idea.core.util.toPsiFile
 
 sealed class ProjectCreator(
@@ -43,9 +45,11 @@ sealed class ProjectCreator(
 
     fun doFinish(indicator: ProgressIndicator) {
         indicator.text2 = "Reformatting files"
-        for (file in filesChanged) {
-            val psi = file.toPsiFile(project) ?: continue
-            ReformatCodeProcessor(psi, false).run()
+        invokeAndWait {
+            for (file in filesChanged) {
+                val psi = file.toPsiFile(project) ?: continue
+                ReformatCodeProcessor(psi, false).run()
+            }
         }
     }
 
@@ -63,25 +67,16 @@ sealed class GradleProjectCreator(
 ) : ProjectCreator(module, root, model) {
 
     protected inner class TemplatesImpl {
-        private val properties = mapOf(
-            "KOTLIN_VERSION" to KotlinVersion.CURRENT.toString(),
-            "MIRAI_VERSION" to model.miraiVersion!!,
-            "GROUP_ID" to model.projectCoordinates!!.groupId,
-            "VERSION" to model.projectCoordinates!!.version,
-            "USE_PROXY_REPO" to "true",
-            "ARTIFACT_ID" to model.projectCoordinates!!.artifactId
-        )
-
         val buildGradle: String
             get() = project.getTemplate(
                 templateBuildGradle,
-                properties
+                model.templateProperties
             )
 
         val settingsGradle: String
             get() = project.getTemplate(
                 templateSettingsGradle,
-                properties
+                model.templateProperties
             )
     }
 
@@ -102,6 +97,7 @@ class GradleKotlinProjectCreator(
             filesChanged += root.writeChild("build.gradle.kts", templates.buildGradle)
             filesChanged += root.writeChild("settings.gradle.kts", templates.settingsGradle)
             filesChanged += root.writeChild(model.languageType.pluginMainClassFile(this))
+            filesChanged += root.writeChild("src/main/resources/META-INF/services/net.mamoe.mirai.console.plugin.jvm.JvmPlugin", model.mainClassQualifiedName)
         }
     }
 }

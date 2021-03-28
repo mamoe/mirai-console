@@ -31,15 +31,15 @@ class BuildSystemStep(
     private lateinit var panel: JPanel
 
     @field:Validation.NotBlank("Group ID")
-    @field:Validation.Pattern(PACKAGE_PATTERN)
+    @field:Validation.Pattern("Group ID", PACKAGE_PATTERN)
     private lateinit var groupIdField: JTextField
 
     @field:Validation.NotBlank("Artifact ID")
-    @field:Validation.Pattern(PACKAGE_PATTERN)
+    @field:Validation.Pattern("Artifact ID", PACKAGE_PATTERN)
     private lateinit var artifactIdField: JTextField
 
     @field:Validation.NotBlank("Version")
-    @field:Validation.Pattern(SEMANTIC_VERSIONING_PATTERN)
+    @field:Validation.Pattern("Version", SEMANTIC_VERSIONING_PATTERN)
     private lateinit var versionField: JTextField
 
     private lateinit var buildSystemBox: JComboBox<BuildSystemType>
