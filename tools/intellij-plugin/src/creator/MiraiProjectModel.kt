@@ -13,7 +13,7 @@ package net.mamoe.mirai.console.intellij.creator
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Deferred
 import net.mamoe.mirai.console.intellij.creator.MiraiVersionKind.Companion.getMiraiVersionListAsync
-import net.mamoe.mirai.console.intellij.creator.steps.BuildSystemStep
+import net.mamoe.mirai.console.intellij.creator.steps.BuildSystemType
 import net.mamoe.mirai.console.intellij.creator.steps.LanguageType
 import net.mamoe.mirai.console.intellij.creator.tasks.adjustToClassName
 import kotlin.contracts.contract
@@ -38,7 +38,7 @@ class MiraiProjectModel private constructor() {
     // STEP: ProjectCreator
 
     var projectCoordinates: ProjectCoordinates? = null
-    var buildSystemType: BuildSystemStep.BuildSystemType = BuildSystemStep.BuildSystemType.DEFAULT
+    var buildSystemType: BuildSystemType = BuildSystemType.DEFAULT
     var languageType: LanguageType = LanguageType.DEFAULT
 
     var miraiVersion: String? = null
