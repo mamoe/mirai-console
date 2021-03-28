@@ -26,7 +26,7 @@ version = Versions.console
 description = "IntelliJ plugin for Mirai Console"
 
 // JVM fails to compile
-kotlinCompilations?.forEach { kotlinCompilation ->
+kotlin.target.compilations.forEach { kotlinCompilation ->
     kotlinCompilation.kotlinOptions.freeCompilerArgs += "-Xuse-ir"
 } // don't use `useIr()`, compatibility with mirai-console dedicated builds
 
