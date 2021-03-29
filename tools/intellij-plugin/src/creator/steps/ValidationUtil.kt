@@ -118,11 +118,11 @@ class Validation {
                 }
                 return true
             }
-
+            var result = true
             for (prop in step::class.java.declaredFields) {
-                if (!validateProperty(prop)) return false
+                if (!validateProperty(prop)) result = false
             }
-            return true
+            return result
         }
     }
 }
