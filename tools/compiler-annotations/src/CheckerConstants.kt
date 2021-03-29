@@ -19,7 +19,7 @@ public object CheckerConstants {
     public const val PLUGIN_ID_PATTERN: String = """([a-zA-Z]\w*(?:\.[a-zA-Z]\w*)*)\.([a-zA-Z]\w*(?:-\w+)*)"""
 
     @JvmField
-    public val PLUGIN_ID_REGEX: Regex = Regex("""([a-zA-Z]\w*(?:\.[a-zA-Z]\w*)*)\.([a-zA-Z]\w*(?:-\w+)*)""")
+    public val PLUGIN_ID_REGEX: Regex = Regex(PLUGIN_ID_PATTERN)
 
 
     @JvmField
