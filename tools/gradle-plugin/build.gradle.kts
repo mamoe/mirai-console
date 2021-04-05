@@ -13,6 +13,7 @@ plugins {
     kotlin("jvm")
     id("java-gradle-plugin")
     id("com.gradle.plugin-publish")
+    groovy
     id("java")
     //signing
     `maven-publish`
@@ -38,6 +39,16 @@ dependencies {
     api("com.github.jengelman.gradle.plugins:shadow:6.0.0")
     api(`jetbrains-annotations`)
     api("com.jfrog.bintray.gradle:gradle-bintray-plugin:${Versions.bintray}")
+
+
+    testApi(kotlin("test-junit5"))
+    testApi("org.junit.jupiter:junit-jupiter-api:${Versions.junit}")
+    testApi("org.junit.jupiter:junit-jupiter-params:${Versions.junit}")
+    testRuntimeOnly("org.junit.jupiter:junit-jupiter-engine:${Versions.junit}")
+    // testApi("org.spockframework:spock-core:1.3-groovy-2.5")
+    testRuntimeOnly(kotlin("gradle-plugin"))
+    testRuntimeOnly(kotlin("gradle-plugin-api"))
+    testImplementation(gradleTestKit())
 }
 
 version = Versions.console
@@ -54,6 +65,7 @@ pluginBundle {
 }
 
 gradlePlugin {
+    testSourceSets(sourceSets.test.get())
     plugins {
         create("miraiConsole") {
             id = "net.mamoe.mirai-console"
@@ -68,6 +80,12 @@ kotlin.target.compilations.all {
     kotlinOptions {
         apiVersion = "1.3"
         languageVersion = "1.3"
+    }
+}
+
+tasks.withType<GroovyCompile> {
+    if (name.contains("test", ignoreCase = true)) {
+        source = project.fileTree("test")
     }
 }
 
