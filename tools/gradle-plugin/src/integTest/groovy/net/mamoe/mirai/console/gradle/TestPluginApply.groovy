@@ -11,16 +11,12 @@ package net.mamoe.mirai.console.gradle
 
 import org.junit.jupiter.api.Test
 
-import static org.gradle.testkit.runner.TaskOutcome.SUCCESS
-
 class TestPluginApply extends AbstractTest {
 
     @Test
     void "can apply plugin"() {
-        def result = gradleRunner()
+        gradleRunner()
                 .withArguments("clean", "--stacktrace")
                 .build()
-
-        assert result.task('clean').outcome == SUCCESS
     }
 }

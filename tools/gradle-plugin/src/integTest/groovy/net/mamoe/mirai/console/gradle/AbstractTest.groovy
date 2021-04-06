@@ -11,6 +11,7 @@ package net.mamoe.mirai.console.gradle
 
 import kotlin.Pair
 import org.gradle.testkit.runner.GradleRunner
+import org.gradle.testkit.runner.internal.PluginUnderTestMetadataReading
 import org.junit.jupiter.api.AfterEach
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.io.TempDir
@@ -28,6 +29,7 @@ abstract class AbstractTest {
     }
 
     def gradleRunner() {
+        println(PluginUnderTestMetadataReading.readImplementationClasspath())
         GradleRunner.create()
                 .withProjectDir(tempDir)
                 .withPluginClasspath()
@@ -62,30 +64,32 @@ abstract class AbstractTest {
         """.stripMargin()
 
 
-//        buildFile = new File(tempDir, "build.gradle")
+        buildFile = new File(tempDir, "build.gradle")
+        buildFile.delete()
+        buildFile << """
+            plugins {
+                id("org.jetbrains.kotlin.jvm") version "1.4.32"
+                id("org.gradle.maven")
+                id("net.mamoe.mirai-console")
+            }
+            
+            repositories {
+                mavenCentral()
+            }
+        """
+
+
+//        buildFile = new File(tempDir, "build.gradle.kts")
 //        buildFile.delete()
 //        buildFile << """
 //            plugins {
-//                id 'org.jetbrains.kotlin.jvm' version '1.4.32'
-//                id 'net.mamoe.mirai-console'
+//                kotlin("jvm") version "1.4.30"
+//                id("net.mamoe.mirai-console")
 //            }
 //            repositories {
 //                mavenCentral()
 //            }
 //        """
-
-
-        buildFile = new File(tempDir, "build.gradle.kts")
-        buildFile.delete()
-        buildFile << """
-            plugins {
-                kotlin("jvm") version "1.4.30"
-                id("net.mamoe.mirai-console")
-            }
-            repositories {
-                mavenCentral()
-            }
-        """
     }
 
     @AfterEach
