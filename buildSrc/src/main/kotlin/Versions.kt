@@ -17,14 +17,14 @@ object Versions {
     const val consoleGraphical = "0.0.7"
     const val consoleTerminal = console
 
-    const val kotlinCompiler = "1.5.0"
-    const val kotlinStdlib = "1.5.0"
+    const val kotlinCompiler = "1.5.10"
+    const val kotlinStdlib = "1.5.10"
 
     const val kotlinIntellijPlugin = "211-1.4.32-release-IJ6693.72" // keep to newest as kotlinCompiler
     const val intellij = "2021.1" // don't update easily unless you want your disk space -= 500MB
 
 
-    const val coroutines = "1.5.0-RC"
+    const val coroutines = "1.5.0"
     const val atomicFU = "0.16.1"
     const val serialization = "1.1.0"
     const val ktor = "1.5.4"
