@@ -12,8 +12,8 @@
 import org.gradle.api.attributes.Attribute
 
 object Versions {
-    const val core = "2.6.4"  // WARNING: This might not be up-to-date since included in mirai build.
-    const val console = "2.6.4"
+    const val core = "2.6.4-dev-kt15"  // WARNING: This might not be up-to-date since included in mirai build.
+    const val console = "2.6.4-dev-kt15"
     const val consoleGraphical = "0.0.7"
     const val consoleTerminal = console
 
