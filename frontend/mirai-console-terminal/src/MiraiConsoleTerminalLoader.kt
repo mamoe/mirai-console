@@ -1,10 +1,10 @@
 /*
- * Copyright 2019-2020 Mamoe Technologies and contributors.
+ * Copyright 2019-2021 Mamoe Technologies and contributors.
  *
- * 此源代码的使用受 GNU AFFERO GENERAL PUBLIC LICENSE version 3 许可证的约束, 可以在以下链接找到该许可证.
- * Use of this source code is governed by the GNU AFFERO GENERAL PUBLIC LICENSE version 3 license that can be found through the following link.
+ *  此源代码的使用受 GNU AFFERO GENERAL PUBLIC LICENSE version 3 许可证的约束, 可以在以下链接找到该许可证.
+ *  Use of this source code is governed by the GNU AGPLv3 license that can be found through the following link.
  *
- * https://github.com/mamoe/mirai/blob/master/LICENSE
+ *  https://github.com/mamoe/mirai/blob/master/LICENSE
  */
 
 @file:Suppress(
@@ -36,7 +36,6 @@ import java.io.FileDescriptor
 import java.io.FileOutputStream
 import java.io.PrintStream
 import kotlin.system.exitProcess
-import kotlin.time.minutes
 
 /**
  * mirai-console-terminal CLI 入口点
@@ -67,14 +66,14 @@ object MiraiConsoleTerminalLoader {
             "" to "",
             "--no-console" to "使用无终端操作环境",
             "--dont-setup-terminal-ansi" to
-                    "[NoConsole] [Windows Only] 不进行ansi console初始化工作",
+                "[NoConsole] [Windows Only] 不进行ansi console初始化工作",
             "--no-ansi" to "[NoConsole] 禁用 ansi",
             "--safe-reading" to
-                    "[NoConsole] 如果启动此选项, console在获取用户输入的时候会获得一个安全的替换符\n" +
-                    "            如果不启动, 将会直接 error",
+                "[NoConsole] 如果启动此选项, console在获取用户输入的时候会获得一个安全的替换符\n" +
+                "            如果不启动, 将会直接 error",
             "--reading-replacement <string>" to
-                    "[NoConsole] Console尝试读取命令的替换符, 默认是空字符串\n" +
-                    "            使用此选项会自动开启 --safe-reading",
+                "[NoConsole] Console尝试读取命令的替换符, 默认是空字符串\n" +
+                "            使用此选项会自动开启 --safe-reading",
         )
         val prefixPlaceholder = String(CharArray(
             help.maxOfOrNull { it.first.length }!! + 3
@@ -159,7 +158,7 @@ object MiraiConsoleTerminalLoader {
 internal object ConsoleDataHolder : AutoSavePluginDataHolder,
     CoroutineScope by MiraiConsole.childScope("ConsoleDataHolder") {
     @ConsoleExperimentalApi
-    override val autoSaveIntervalMillis: LongRange = 1.minutes.toLongMilliseconds()..10.minutes.toLongMilliseconds()
+    override val autoSaveIntervalMillis: LongRange = 60_000L..(10 * 60_000L)
 
     @ConsoleExperimentalApi
     override val dataHolderName: String
