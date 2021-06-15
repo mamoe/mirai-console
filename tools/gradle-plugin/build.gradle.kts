@@ -54,7 +54,7 @@ dependencies {
     "integTestImplementation"(gradleTestKit())
 }
 
-version = "2.6.5-devgradle7"
+version = Versions.console
 description = "Gradle plugin for Mirai Console"
 
 kotlin {

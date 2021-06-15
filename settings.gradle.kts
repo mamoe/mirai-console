@@ -47,4 +47,4 @@ if (!disableOldFrontEnds) {
     }
 }
 
-// enableFeaturePreview("GRADLE_METADATA")
+enableFeaturePreview("GRADLE_METADATA")
