@@ -30,8 +30,8 @@ allprojects {
     group = "net.mamoe"
 
     repositories {
+        maven { url =uri("https://maven.aliyun.com/repository/public/") }
         mavenLocal()
-        jcenter()
         mavenCentral()
     }
 }
