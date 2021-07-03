@@ -9,16 +9,14 @@
 
 package autoend
 
-import kotlinx.coroutines.*
+import kotlinx.coroutines.delay
+import kotlinx.coroutines.launch
 import net.mamoe.mirai.console.command.ConsoleCommandSender
 import net.mamoe.mirai.console.command.executeCommand
 import net.mamoe.mirai.console.extension.PluginComponentStorage
-import net.mamoe.mirai.console.plugin.jvm.JvmPluginDescription
-import net.mamoe.mirai.console.plugin.jvm.KotlinPlugin
 import net.mamoe.mirai.console.testing.BaseTestingPlugin
 
-object Main : BaseTestingPlugin("AutoEnd") {
-
+public object Main : BaseTestingPlugin("AutoEnd") {
     override fun PluginComponentStorage.onLoad() {
         contributePostStartupExtension {
             launch {

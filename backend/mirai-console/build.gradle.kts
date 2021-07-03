@@ -78,6 +78,7 @@ tasks {
 
 configurePublishing("mirai-console")
 
+/*
 setupTesterPluginSources()
 
 fun Project.setupTesterPluginSources() {
@@ -152,3 +153,4 @@ fun Project.setupTesterPluginSources() {
         tasks.getByName("check").dependsOn("runTerminalDaemon")
     }
 }
+*/

@@ -14,7 +14,7 @@ import net.mamoe.mirai.console.plugin.jvm.JvmPluginDescription
 import net.mamoe.mirai.console.plugin.jvm.KotlinPlugin
 import kotlin.system.exitProcess
 
-open class BaseTestingPlugin(
+public open class BaseTestingPlugin(
     name: String = CallerFinder.getCaller().className.substringAfter('.')
 ) : KotlinPlugin(
     JvmPluginDescription(
@@ -25,6 +25,8 @@ open class BaseTestingPlugin(
 
     override fun onEnable() {
         try {
+            logger.info("Bootstrapping.....")
+            logger.info("Instance class = " + this.javaClass)
             onEnable0()
         } catch (e: Throwable) {
             logger.error(e)
