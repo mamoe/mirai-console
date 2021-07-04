@@ -33,6 +33,7 @@ import net.mamoe.mirai.utils.LoginSolver
 import net.mamoe.mirai.utils.MiraiLogger
 import java.nio.file.Path
 import java.util.*
+import java.util.concurrent.ConcurrentLinkedQueue
 import java.util.concurrent.locks.ReentrantLock
 import kotlin.annotation.AnnotationTarget.*
 import kotlin.coroutines.CoroutineContext
@@ -226,11 +227,23 @@ public interface MiraiConsoleImplementation : CoroutineScope {
      */
     @ConsoleFrontEndImplementation
     public interface BackendAccess {
-        // GlobalComponentStorage
+        /**
+         * @see GlobalComponentStorage
+         */
         public val globalComponentStorage: ComponentStorage
 
-        // PluginManagerImpl.resolvedPlugins
-        public val resolvedPlugins: MutableList<Plugin>
+        /**
+         * Implementation is thread-safe and mutable [ConcurrentLinkedQueue] now, **but not guaranteed to be so in future releases**.
+         *
+         *
+         * @see PluginManagerImpl.resolvedPlugins
+         * @since 2.8
+         */
+        public val resolvedPlugins: Collection<Plugin>
+
+        // deprecated since 2.8
+        @Deprecated("For binary compatibility", level = DeprecationLevel.HIDDEN)
+        public fun getResolvedPlugins(): MutableList<Plugin> = resolvedPlugins.toMutableList() // changes are lost
     }
 
     /**
@@ -244,7 +257,7 @@ public interface MiraiConsoleImplementation : CoroutineScope {
     public companion object {
         private val backendAccessInstance = object : BackendAccess {
             override val globalComponentStorage: ComponentStorage get() = GlobalComponentStorage
-            override val resolvedPlugins: MutableList<Plugin> get() = PluginManagerImpl.resolvedPlugins
+            override val resolvedPlugins: Collection<Plugin> get() = PluginManagerImpl.resolvedPlugins
         }
 
         internal lateinit var instance: MiraiConsoleImplementation

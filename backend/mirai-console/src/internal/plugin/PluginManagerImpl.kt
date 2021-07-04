@@ -18,21 +18,20 @@ import net.mamoe.mirai.console.extensions.PluginLoaderProvider
 import net.mamoe.mirai.console.internal.data.cast
 import net.mamoe.mirai.console.internal.data.mkdir
 import net.mamoe.mirai.console.internal.extension.GlobalComponentStorage
-import net.mamoe.mirai.console.plugin.Plugin
-import net.mamoe.mirai.console.plugin.PluginManager
+import net.mamoe.mirai.console.plugin.*
 import net.mamoe.mirai.console.plugin.PluginManager.INSTANCE.safeLoader
 import net.mamoe.mirai.console.plugin.description.PluginDependency
 import net.mamoe.mirai.console.plugin.description.PluginDescription
 import net.mamoe.mirai.console.plugin.jvm.JvmPlugin
 import net.mamoe.mirai.console.plugin.loader.PluginLoadException
 import net.mamoe.mirai.console.plugin.loader.PluginLoader
-import net.mamoe.mirai.console.plugin.name
 import net.mamoe.mirai.console.util.CoroutineScopeUtils.childScope
 import net.mamoe.mirai.console.util.SemVersion
 import net.mamoe.mirai.utils.info
+import net.mamoe.mirai.utils.warning
 import java.io.File
 import java.nio.file.Path
-import java.util.concurrent.CopyOnWriteArrayList
+import java.util.concurrent.ConcurrentLinkedQueue
 
 internal object PluginManagerImpl : PluginManager, CoroutineScope by MiraiConsole.childScope("PluginManager") {
 
@@ -51,8 +50,9 @@ internal object PluginManagerImpl : PluginManager, CoroutineScope by MiraiConsol
     private val logger = MiraiConsole.createLogger("plugin")
 
     @JvmField
-    internal val resolvedPlugins: MutableList<Plugin> =
-        CopyOnWriteArrayList() // write operations are mostly performed on init
+    internal val resolvedPlugins: MutableCollection<Plugin> =
+        ConcurrentLinkedQueue() // write operations are mostly performed on init
+
     override val plugins: List<Plugin>
         get() = resolvedPlugins.toList()
     override val builtInLoaders: List<PluginLoader<*, *>> by lazy {
@@ -169,7 +169,24 @@ internal object PluginManagerImpl : PluginManager, CoroutineScope by MiraiConsol
     }
 
     internal fun enableAllLoadedPlugins() {
-        resolvedPlugins.forEach { enablePlugin(it) }
+        fun disableDependantPlugins(failed: Plugin, dependencyFailure: Boolean) {
+            logger.warning { "Disabling ${failed.name} due to " + if (dependencyFailure) "its depending plugin failed to load" else "" }
+            resolvedPlugins.remove(failed)
+            for (plugin in resolvedPlugins) {
+                if (plugin.dependencies.any { !it.isOptional && it.id == failed.id }) {
+                    disableDependantPlugins(plugin, true)
+                }
+            }
+        }
+
+        resolvedPlugins.forEach { plugin ->
+            kotlin.runCatching {
+                enablePlugin(plugin)
+            }.onFailure { e ->
+                logger.error("Exception while loading plugin ${plugin.name}.", e)
+                disableDependantPlugins(plugin, false)
+            }
+        }
     }
 
     @kotlin.jvm.Throws(PluginLoadException::class)
