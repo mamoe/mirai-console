@@ -37,7 +37,7 @@ internal inline fun <reified E : Throwable> runIgnoreException(block: () -> Unit
 internal fun StackFrame.findLoader(): ClassLoader? {
     classInstance?.let { return it.classLoader }
     return runCatching {
-        BuiltInJvmPluginLoaderImpl.classLoaders.firstOrNull { it.findClass(className, true) != null }
+        BuiltInJvmPluginLoaderImpl.classLoaders.firstOrNull { it.loadedClass(className) != null }
     }.getOrNull()
 }
 
