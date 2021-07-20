@@ -1,10 +1,10 @@
 /*
- * Copyright 2019-2020 Mamoe Technologies and contributors.
+ * Copyright 2019-2021 Mamoe Technologies and contributors.
  *
  * 此源代码的使用受 GNU AFFERO GENERAL PUBLIC LICENSE version 3 许可证的约束, 可以在以下链接找到该许可证.
- * Use of this source code is governed by the GNU AFFERO GENERAL PUBLIC LICENSE version 3 license that can be found through the following link.
+ * Use of this source code is governed by the GNU AGPLv3 license that can be found through the following link.
  *
- * https://github.com/mamoe/mirai/blob/master/LICENSE
+ * https://github.com/mamoe/mirai/blob/dev/LICENSE
  */
 @file:Suppress("unused", "MemberVisibilityCanBePrivate", "FunctionName")
 
@@ -125,10 +125,14 @@ public open class AnsiMessageBuilder public constructor(
     /////////////////////////////////////////////////////////////////////////////////
     override fun append(c: Char): AnsiMessageBuilder = apply { delegate.append(c) }
     override fun append(csq: CharSequence?): AnsiMessageBuilder = apply { delegate.append(csq) }
-    override fun append(csq: CharSequence?, start: Int, end: Int): AnsiMessageBuilder = apply { delegate.append(csq, start, end) }
+    override fun append(csq: CharSequence?, start: Int, end: Int): AnsiMessageBuilder =
+        apply { delegate.append(csq, start, end) }
+
     public fun append(any: Any?): AnsiMessageBuilder = apply { delegate.append(any) }
     public fun append(value: String): AnsiMessageBuilder = apply { delegate.append(value) }
-    public fun append(value: String, start: Int, end: Int): AnsiMessageBuilder = apply { delegate.append(value, start, end) }
+    public fun append(value: String, start: Int, end: Int): AnsiMessageBuilder =
+        apply { delegate.append(value, start, end) }
+
     public fun append(value: Boolean): AnsiMessageBuilder = apply { delegate.append(value) }
     public fun append(value: Float): AnsiMessageBuilder = apply { delegate.append(value) }
     public fun append(value: Double): AnsiMessageBuilder = apply { delegate.append(value) }

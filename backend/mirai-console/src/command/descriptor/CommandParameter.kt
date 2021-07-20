@@ -1,10 +1,10 @@
 /*
- * Copyright 2019-2020 Mamoe Technologies and contributors.
+ * Copyright 2019-2021 Mamoe Technologies and contributors.
  *
  * 此源代码的使用受 GNU AFFERO GENERAL PUBLIC LICENSE version 3 许可证的约束, 可以在以下链接找到该许可证.
- * Use of this source code is governed by the GNU AFFERO GENERAL PUBLIC LICENSE version 3 license that can be found through the following link.
+ * Use of this source code is governed by the GNU AGPLv3 license that can be found through the following link.
  *
- * https://github.com/mamoe/mirai/blob/master/LICENSE
+ * https://github.com/mamoe/mirai/blob/dev/LICENSE
  */
 
 package net.mamoe.mirai.console.command.descriptor
@@ -81,7 +81,10 @@ public interface CommandValueParameter<T : Any?> : CommandParameter<T> {
     public fun accepts(argument: CommandValueArgument, commandArgumentContext: CommandArgumentContext?): Boolean =
         accepting(argument, commandArgumentContext).isAcceptable
 
-    public fun accepting(argument: CommandValueArgument, commandArgumentContext: CommandArgumentContext?): ArgumentAcceptance
+    public fun accepting(
+        argument: CommandValueArgument,
+        commandArgumentContext: CommandArgumentContext?
+    ): ArgumentAcceptance
 }
 
 @ExperimentalCommandDescriptors
@@ -155,7 +158,10 @@ public sealed class AbstractCommandValueParameter<T> : CommandValueParameter<T>,
         }
     }
 
-    public override fun accepting(argument: CommandValueArgument, commandArgumentContext: CommandArgumentContext?): ArgumentAcceptance {
+    public override fun accepting(
+        argument: CommandValueArgument,
+        commandArgumentContext: CommandArgumentContext?
+    ): ArgumentAcceptance {
         if (isVararg) {
             val arrayElementType = this.type.arguments.single() // Array<T>
             return acceptingImpl(arrayElementType.type ?: ANY_TYPE, argument, commandArgumentContext)
@@ -205,7 +211,11 @@ public sealed class AbstractCommandValueParameter<T> : CommandValueParameter<T>,
 
         override fun toString(): String = "<$expectingValue>"
 
-        override fun acceptingImpl(expectingType: KType, argument: CommandValueArgument, commandArgumentContext: CommandArgumentContext?): ArgumentAcceptance {
+        override fun acceptingImpl(
+            expectingType: KType,
+            argument: CommandValueArgument,
+            commandArgumentContext: CommandArgumentContext?
+        ): ArgumentAcceptance {
             return if (argument.value.content.equals(expectingValue, ignoreCase)) {
                 ArgumentAcceptance.Direct
             } else ArgumentAcceptance.Impossible

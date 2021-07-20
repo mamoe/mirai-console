@@ -1,10 +1,10 @@
 /*
- * Copyright 2019-2020 Mamoe Technologies and contributors.
+ * Copyright 2019-2021 Mamoe Technologies and contributors.
  *
  * 此源代码的使用受 GNU AFFERO GENERAL PUBLIC LICENSE version 3 许可证的约束, 可以在以下链接找到该许可证.
- * Use of this source code is governed by the GNU AFFERO GENERAL PUBLIC LICENSE version 3 license that can be found through the following link.
+ * Use of this source code is governed by the GNU AGPLv3 license that can be found through the following link.
  *
- * https://github.com/mamoe/mirai/blob/master/LICENSE
+ * https://github.com/mamoe/mirai/blob/dev/LICENSE
  */
 
 @file:Suppress("NOTHING_TO_INLINE", "unused")
@@ -86,10 +86,10 @@ internal object PluginManagerImpl : PluginManager, CoroutineScope by MiraiConsol
             resolvedPlugins.add(plugin)
         }.fold(
             onSuccess = {
-                logger.info { "Successfully loaded plugin ${getPluginDescription(plugin).name}" }
+                logger.info { "Successfully loaded plugin ${getPluginDescription(plugin).smartToString()}" }
             },
             onFailure = {
-                logger.info { "Cannot load plugin ${getPluginDescription(plugin).name}" }
+                logger.info { "Cannot load plugin ${getPluginDescription(plugin).smartToString()}" }
                 throw it
             }
         )
@@ -101,10 +101,10 @@ internal object PluginManagerImpl : PluginManager, CoroutineScope by MiraiConsol
             this.enable(plugin as P)
         }.fold(
             onSuccess = {
-                logger.info { "Successfully enabled plugin ${getPluginDescription(plugin).name}" }
+                logger.info { "Successfully enabled plugin ${getPluginDescription(plugin).smartToString()}" }
             },
             onFailure = {
-                logger.info { "Cannot enable plugin ${getPluginDescription(plugin).name}" }
+                logger.info { "Cannot enable plugin ${getPluginDescription(plugin).smartToString()}" }
                 throw it
             }
         )

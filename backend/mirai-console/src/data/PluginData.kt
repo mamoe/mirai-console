@@ -1,10 +1,10 @@
 /*
- * Copyright 2019-2020 Mamoe Technologies and contributors.
+ * Copyright 2019-2021 Mamoe Technologies and contributors.
  *
  * 此源代码的使用受 GNU AFFERO GENERAL PUBLIC LICENSE version 3 许可证的约束, 可以在以下链接找到该许可证.
- * Use of this source code is governed by the GNU AFFERO GENERAL PUBLIC LICENSE version 3 license that can be found through the following link.
+ * Use of this source code is governed by the GNU AGPLv3 license that can be found through the following link.
  *
- * https://github.com/mamoe/mirai/blob/master/LICENSE
+ * https://github.com/mamoe/mirai/blob/dev/LICENSE
  */
 
 @file:Suppress(
@@ -221,7 +221,8 @@ public inline fun <reified T> PluginData.value(
 @ResolveContext(RESTRICTED_NO_ARG_CONSTRUCTOR)
 @LowPriorityInOverloadResolution
 public inline fun <@ResolveContext(RESTRICTED_NO_ARG_CONSTRUCTOR) reified T>
-    PluginData.value(apply: T.() -> Unit = {}): SerializerAwareValue<T> = valueImpl<T>(typeOf0<T>(), T::class).also { it.value.apply() }
+        PluginData.value(apply: T.() -> Unit = {}): SerializerAwareValue<T> =
+    valueImpl<T>(typeOf0<T>(), T::class).also { it.value.apply() }
 
 @Suppress("UNCHECKED_CAST")
 @PublishedApi

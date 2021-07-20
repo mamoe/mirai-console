@@ -7,10 +7,10 @@
  * https://github.com/mamoe/mirai/blob/dev/LICENSE
  */
 
-package net.mamoe.mirai.console.internal.util.semver
+package net.mamoe.mirai.console.internal.plugin
 
-import net.mamoe.mirai.console.util.SemVersion
+import net.mamoe.mirai.console.plugin.description.PluginDescription
 
-internal interface RequirementInternal {
-    fun test(version: SemVersion): Boolean
+internal fun PluginDescription.smartToString(): String {
+    return "$name v$version"
 }
