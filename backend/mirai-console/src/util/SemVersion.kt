@@ -1,10 +1,10 @@
 /*
- * Copyright 2019-2020 Mamoe Technologies and contributors.
+ * Copyright 2019-2021 Mamoe Technologies and contributors.
  *
  * 此源代码的使用受 GNU AFFERO GENERAL PUBLIC LICENSE version 3 许可证的约束, 可以在以下链接找到该许可证.
- * Use of this source code is governed by the GNU AFFERO GENERAL PUBLIC LICENSE version 3 license that can be found through the following link.
+ * Use of this source code is governed by the GNU AGPLv3 license that can be found through the following link.
  *
- * https://github.com/mamoe/mirai/blob/master/LICENSE
+ * https://github.com/mamoe/mirai/blob/dev/LICENSE
  */
 
 /*
@@ -154,7 +154,8 @@ internal constructor(
         @JvmStatic
         @JvmName("parse")
         @Throws(IllegalArgumentException::class, NumberFormatException::class)
-        public operator fun invoke(@ResolveContext(SEMANTIC_VERSION) version: String): SemVersion = SemVersionInternal.parse(version)
+        public operator fun invoke(@ResolveContext(SEMANTIC_VERSION) version: String): SemVersion =
+            SemVersionInternal.parse(version)
 
         /**
          * 解析一条依赖需求描述, 在无法解析的时候抛出 [IllegalArgumentException]
@@ -207,7 +208,8 @@ internal constructor(
          */
         @JvmStatic
         @Throws(IllegalArgumentException::class)
-        public fun SemVersion.satisfies(@ResolveContext(VERSION_REQUIREMENT) requirement: String): Boolean = parseRangeRequirement(requirement).test(this)
+        public fun SemVersion.satisfies(@ResolveContext(VERSION_REQUIREMENT) requirement: String): Boolean =
+            parseRangeRequirement(requirement).test(this)
 
         /** for Kotlin only */
         @JvmStatic
@@ -217,7 +219,8 @@ internal constructor(
         /** for Kotlin only */
         @JvmStatic
         @JvmSynthetic
-        public operator fun Requirement.contains(@ResolveContext(SEMANTIC_VERSION) version: String): Boolean = test(version)
+        public operator fun Requirement.contains(@ResolveContext(SEMANTIC_VERSION) version: String): Boolean =
+            test(version)
     }
 
     @Transient
@@ -260,10 +263,10 @@ internal constructor(
     public fun equals(other: SemVersion, deep: Boolean): Boolean {
         return if (deep) {
             (other.major == major
-                && other.minor == minor
-                && other.patch == patch
-                && other.identifier == identifier
-                && other.metadata == metadata)
+                    && other.minor == minor
+                    && other.patch == patch
+                    && other.identifier == identifier
+                    && other.metadata == metadata)
         } else {
             this.compareTo(other) == 0
         }

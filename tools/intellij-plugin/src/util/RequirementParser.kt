@@ -1,10 +1,10 @@
 /*
- * Copyright 2019-2020 Mamoe Technologies and contributors.
+ * Copyright 2019-2021 Mamoe Technologies and contributors.
  *
  * 此源代码的使用受 GNU AFFERO GENERAL PUBLIC LICENSE version 3 许可证的约束, 可以在以下链接找到该许可证.
- * Use of this source code is governed by the GNU AFFERO GENERAL PUBLIC LICENSE version 3 license that can be found through the following link.
+ * Use of this source code is governed by the GNU AGPLv3 license that can be found through the following link.
  *
- * https://github.com/mamoe/mirai/blob/master/LICENSE
+ * https://github.com/mamoe/mirai/blob/dev/LICENSE
  */
 
 package net.mamoe.mirai.console.intellij.util
@@ -271,7 +271,10 @@ internal class RequirementParser {
                                 val isStartingOfGroup = nextToken is Token.GroupBod.Left
                                 if (isStartingOfGroup != isEndingOfGroup) {
                                     fun getType(type: Boolean) = if (type) "`}`" else "<结束>"
-                                    next.ia(reader, "需要 ${getType(isStartingOfGroup)}, 但是找到了 ${getType(isEndingOfGroup)}")
+                                    next.ia(
+                                        reader,
+                                        "需要 ${getType(isStartingOfGroup)}, 但是找到了 ${getType(isEndingOfGroup)}"
+                                    )
                                 } else {
                                     // reader.insertToken = next
                                     break
@@ -284,21 +287,21 @@ internal class RequirementParser {
                                     fun getMode(type: Boolean) = if (type) "`&&`" else "`||`"
                                     next.ia(
                                         reader, "为了避免语义混乱, 不允许在一层规则组混合使用 `&&` 和 `||`, 请显式使用 `{}` 分离. " +
-                                            "需要 ${getMode(mode)}, 但是找到了 ${getMode(stx)}"
+                                                "需要 ${getMode(mode)}, 但是找到了 ${getMode(stx)}"
                                     )
                                 }
                                 chunks.add(process(reader))
                             }
                             else -> {
-                               next.ia(
-                                   reader, "Except ${
-                                       when (mode) {
-                                           null -> "`&&` or `||`"
-                                           true -> "`&&`"
-                                           false -> "`||`"
-                                       }
-                                   } but get `${next.content}`"
-                               )
+                                next.ia(
+                                    reader, "Except ${
+                                        when (mode) {
+                                            null -> "`&&` or `||`"
+                                            true -> "`&&`"
+                                            false -> "`||`"
+                                        }
+                                    } but get `${next.content}`"
+                                )
                             }
                         }
                     }

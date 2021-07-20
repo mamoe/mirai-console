@@ -1,10 +1,10 @@
 /*
- * Copyright 2019-2020 Mamoe Technologies and contributors.
+ * Copyright 2019-2021 Mamoe Technologies and contributors.
  *
  * 此源代码的使用受 GNU AFFERO GENERAL PUBLIC LICENSE version 3 许可证的约束, 可以在以下链接找到该许可证.
- * Use of this source code is governed by the GNU AFFERO GENERAL PUBLIC LICENSE version 3 license that can be found through the following link.
+ * Use of this source code is governed by the GNU AGPLv3 license that can be found through the following link.
  *
- * https://github.com/mamoe/mirai/blob/master/LICENSE
+ * https://github.com/mamoe/mirai/blob/dev/LICENSE
  */
 
 @file:OptIn(ExperimentalCommandDescriptors::class)
@@ -103,7 +103,12 @@ internal fun startupConsoleThread() {
                         consoleLogger.warning { "权限不足." }
                     }
                     is UnmatchedSignature -> {
-                        consoleLogger.warning { "参数不匹配, 你是否想执行: \n" + result.failureReasons.render(result.command, result.call) }
+                        consoleLogger.warning {
+                            "参数不匹配, 你是否想执行: \n" + result.failureReasons.render(
+                                result.command,
+                                result.call
+                            )
+                        }
                     }
                     is Failure -> {
                         consoleLogger.warning { result.toString() }
@@ -143,7 +148,8 @@ private fun List<CommandValueParameter<*>>.anyStringConstantUnmatched(arguments:
 @OptIn(ExperimentalCommandDescriptors::class)
 internal fun UnmatchedCommandSignature.render(command: Command): String {
     @Suppress("INVISIBLE_MEMBER", "INVISIBLE_REFERENCE")
-    val usage = net.mamoe.mirai.console.internal.command.CommandReflector.generateUsage(command, null, listOf(this.signature))
+    val usage =
+        net.mamoe.mirai.console.internal.command.CommandReflector.generateUsage(command, null, listOf(this.signature))
     return usage.trim() + "    (${failureReason.render()})"
 }
 

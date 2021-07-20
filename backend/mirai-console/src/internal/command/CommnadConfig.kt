@@ -14,13 +14,19 @@ import net.mamoe.mirai.console.data.ValueDescription
 import net.mamoe.mirai.console.data.ValueName
 import net.mamoe.mirai.console.data.value
 
-@ValueDescription("""
+@ValueDescription(
+    """
     内置指令系统配置
 """)
-internal object CommandConfig : ReadOnlyPluginConfig("Command") {
+internal object CommandConfig : AutoSavePluginConfig("Command") {
+    override fun shouldPerformAutoSaveWheneverChanged(): Boolean {
+        return false
+    }
+
     @ValueDescription("""
         指令前缀, 默认 "/"
-    """)
+    """
+    )
     @ValueName("commandPrefix")
     val commandPrefix: String by value("/")
 }
