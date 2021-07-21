@@ -154,6 +154,7 @@ public class MiraiConsoleGradlePlugin : Plugin<Project> {
         // plugins.apply("org.gradle.maven")
         plugins.apply(ShadowPlugin::class.java)
         plugins.apply(BintrayPlugin::class.java)
+        repositories.mavenCentral()
 
         afterEvaluate {
             configureCompileTarget()
