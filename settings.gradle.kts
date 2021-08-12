@@ -34,6 +34,12 @@ includeProject(":mirai-console-compiler-common", "tools/compiler-common")
 includeProject(":mirai-console-intellij", "tools/intellij-plugin")
 includeProject(":mirai-console-gradle", "tools/gradle-plugin")
 
+includeProject(":mirai-console:tester-plugin-common", "backend/mirai-console/tester-plugin-common")
+includeProject(":mirai-console:sandbox-tester:p1", "backend/mirai-console/sandbox-tester/p1")
+includeProject(":mirai-console:sandbox-tester:p2", "backend/mirai-console/sandbox-tester/p2")
+includeProject(":mirai-console:sandbox-tester:auto-end", "backend/mirai-console/sandbox-tester/auto-end")
+includeProject(":mirai-console:sandbox-tester", "backend/mirai-console/sandbox-tester")
+
 @Suppress("ConstantConditionIf")
 if (!disableOldFrontEnds) {
     includeProject(":mirai-console-terminal", "frontend/mirai-console-terminal")
