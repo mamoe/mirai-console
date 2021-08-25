@@ -92,9 +92,9 @@ abstract override suspend fun CommandSender.onCommand(args: MessageChain)
 例如 `/test 123 [图片]`，在处理时 `onCommand` 接收的 `args` 为包含 2 个元素的 `MessageChain`。第一个元素为 `PlainText("123")`，第二个元素为 `Image` 类型。
 
 ### [`Register`]
-需要把指令单例注册到`CommandManager`以在console生效
+需要把指令注册到 `CommandManager` 以在 Mirai Console 生效
 ```kotlin
-CommandManager.registerCommand(<class/object>)
+CommandManager.registerCommand(command)
 ```
 
 ## 参数智能解析
