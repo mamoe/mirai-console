@@ -94,7 +94,7 @@ abstract override suspend fun CommandSender.onCommand(args: MessageChain)
 ### [`Register`]
 需要把指令单例注册到`CommandManager`以在console生效
 ```kotlin
-CommandManager.register(<class/object>)
+CommandManager.registerCommand(<class/object>)
 ```
 
 ## 参数智能解析
