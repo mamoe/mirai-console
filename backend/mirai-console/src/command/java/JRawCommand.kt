@@ -102,7 +102,7 @@ public abstract class JRawCommand
      * @param args 指令参数.
      *
      * @see CommandManager.executeCommand 查看更多信息
-     * @since 2.7
+     * @since 2.8
      */
     public open fun onCommand(sender: CommandSender, args: MessageChain) {}
 }
