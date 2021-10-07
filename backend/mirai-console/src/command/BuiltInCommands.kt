@@ -14,6 +14,7 @@ import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
 import net.mamoe.mirai.Bot
 import net.mamoe.mirai.console.MiraiConsole
+import net.mamoe.mirai.console.command.BuiltInCommands.LoginCommand.doLogin
 import net.mamoe.mirai.console.command.CommandManager.INSTANCE.register
 import net.mamoe.mirai.console.command.descriptor.CommandArgumentParserException
 import net.mamoe.mirai.console.command.descriptor.CommandValueArgumentParser.Companion.map
@@ -27,6 +28,7 @@ import net.mamoe.mirai.console.internal.command.CommandManagerImpl
 import net.mamoe.mirai.console.internal.command.CommandManagerImpl.allRegisteredCommands
 import net.mamoe.mirai.console.internal.data.builtins.AutoLoginConfig
 import net.mamoe.mirai.console.internal.data.builtins.AutoLoginConfig.Account.*
+import net.mamoe.mirai.console.internal.data.builtins.AutoLoginConfig.Account.PasswordKind.MD5
 import net.mamoe.mirai.console.internal.data.builtins.AutoLoginConfig.Account.PasswordKind.PLAIN
 import net.mamoe.mirai.console.internal.permission.BuiltInPermissionService
 import net.mamoe.mirai.console.internal.plugin.PluginManagerImpl
@@ -48,6 +50,7 @@ import net.mamoe.mirai.message.nextMessageOrNull
 import net.mamoe.mirai.utils.BotConfiguration
 import net.mamoe.mirai.utils.MiraiLogger
 import net.mamoe.mirai.utils.secondsToMillis
+import java.lang.IllegalStateException
 import java.lang.management.ManagementFactory
 import java.lang.management.MemoryUsage
 import java.time.ZoneId
@@ -173,15 +176,36 @@ public object BuiltInCommands {
         @JvmOverloads
         public suspend fun CommandSender.handle(
             @Name("qq") id: Long,
-            password: String,
+            pw: String? = null,
             protocol: BotConfiguration.MiraiProtocol? = null,
         ) {
-            kotlin.runCatching {
-                MiraiConsole.addBot(id, password) {
-                    if (protocol != null) {
-                        this.protocol = protocol
+            val password:Any = pw ?: let a@{
+                AutoLoginConfig.accounts.firstOrNull { it.account == id.toString() }.let {
+                    if(it == null){
+                        //Err: account record no found
+                        sendMessage("account record no found")
+                        return
                     }
-                }.doLogin()
+                    return@a if(it.password.kind == MD5) it.password.value.toByteArray() else it.password.value
+                }
+            }
+            kotlin.runCatching {
+                // Need check already login?
+                when {
+                    (password is String) ->
+                        MiraiConsole.addBot(id, password) {
+                            if (protocol != null) {
+                                this.protocol = protocol
+                            }
+                        }.doLogin()
+                    (password is ByteArray) ->
+                        MiraiConsole.addBot(id, password) {
+                            if (protocol != null) {
+                                this.protocol = protocol
+                            }
+                        }.doLogin()
+                    else -> throw IllegalStateException()// Unreachable
+                }
             }.fold(
                 onSuccess = { scopeWith(ConsoleCommandSender).sendMessage("${it.nick} ($id) Login successful") },
                 onFailure = { throwable ->

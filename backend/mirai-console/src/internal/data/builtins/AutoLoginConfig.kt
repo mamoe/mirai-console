@@ -53,8 +53,7 @@ public object AutoLoginConfig : AutoSavePluginConfig("AutoLogin") {
         public enum class ConfigurationKey {
             protocol,
             device,
-
-            ;
+            autoLogin;
 
             public object Parser : CommandValueArgumentParser<ConfigurationKey>,
                 InternalCommandValueArgumentParserExtensions<ConfigurationKey>() {
@@ -89,7 +88,8 @@ public object AutoLoginConfig : AutoSavePluginConfig("AutoLogin") {
                 password = Account.Password(Account.PasswordKind.PLAIN, "pwd"),
                 configuration = mapOf(
                     Account.ConfigurationKey.protocol to "ANDROID_PHONE",
-                    Account.ConfigurationKey.device to "device.json"
+                    Account.ConfigurationKey.device to "device.json",
+                    Account.ConfigurationKey.autoLogin to true
                 )
             )
         )
