@@ -217,7 +217,7 @@ internal object MiraiConsoleImplementationBridge : CoroutineScope, MiraiConsoleI
         phase("auto-login bots") {
             runBlocking {
                 val accounts = AutoLoginConfig.accounts.toList()
-                for (account in accounts) {
+                for (account in accounts.filter { it.configuration.getOrDefault(ConfigurationKey.autoLogin, true) == true }) {
                     val id = kotlin.runCatching {
                         account.account.toLong()
                     }.getOrElse {
