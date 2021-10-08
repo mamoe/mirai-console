@@ -176,10 +176,10 @@ public object BuiltInCommands {
         @JvmOverloads
         public suspend fun CommandSender.handle(
             @Name("qq") id: Long,
-            pw: String? = null,
+            pwd: String? = null,
             protocol: BotConfiguration.MiraiProtocol? = null,
         ) {
-            val password:Any = pw ?: let a@{
+            val password:Any = pwd ?: let a@{
                 AutoLoginConfig.accounts.firstOrNull { it.account == id.toString() }.let {
                     if(it == null){
                         //Err: account record no found
