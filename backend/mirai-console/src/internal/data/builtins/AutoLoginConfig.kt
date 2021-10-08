@@ -36,6 +36,7 @@ public object AutoLoginConfig : AutoSavePluginConfig("AutoLogin") {
             账号配置. 可用配置列表 (注意大小写):
             "protocol": "ANDROID_PHONE" / "ANDROID_PAD" / "ANDROID_WATCH"
             "device": "device.json" 
+            "autoLogin": true
         """
         )
         val configuration: Map<ConfigurationKey, @Serializable(with = YamlDynamicSerializer::class) Any> = mapOf(),
