@@ -170,6 +170,10 @@ public object BuiltInCommands {
         private suspend fun Bot.doLogin() = kotlin.runCatching {
             login(); this
         }.onFailure { close() }.getOrThrow()
+        private fun BotConfiguration.setup(protocol:BotConfiguration.MiraiProtocol?):BotConfiguration{
+            if(protocol != null) this.protocol = protocol
+            return this
+        }
 
         private suspend fun getPassword(id: Long): Any? {
             val acc = AutoLoginConfig.accounts.firstOrNull { it.account == id.toString() }
@@ -193,15 +197,11 @@ public object BuiltInCommands {
                 when {
                     pwd is String ->
                         MiraiConsole.addBot(id, pwd) {
-                            if (protocol != null) {
-                                this.protocol = protocol
-                            }
+                            setup(protocol)
                         }.doLogin()
                     pwd is ByteArray ->
                         MiraiConsole.addBot(id, pwd) {
-                            if (protocol != null) {
-                                this.protocol = protocol
-                            }
+                            setup(protocol)
                         }.doLogin()
                     else -> throw IllegalStateException()// Unreachable
                 }
