@@ -14,8 +14,8 @@ import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
 import net.mamoe.mirai.Bot
 import net.mamoe.mirai.console.MiraiConsole
-import net.mamoe.mirai.console.command.BuiltInCommands.LoginCommand.doLogin
 import net.mamoe.mirai.console.command.CommandManager.INSTANCE.register
+import net.mamoe.mirai.console.command.ConsoleCommandSender.sendMessage
 import net.mamoe.mirai.console.command.descriptor.CommandArgumentParserException
 import net.mamoe.mirai.console.command.descriptor.CommandValueArgumentParser.Companion.map
 import net.mamoe.mirai.console.command.descriptor.PermissionIdValueArgumentParser
@@ -50,7 +50,6 @@ import net.mamoe.mirai.message.nextMessageOrNull
 import net.mamoe.mirai.utils.BotConfiguration
 import net.mamoe.mirai.utils.MiraiLogger
 import net.mamoe.mirai.utils.secondsToMillis
-import java.lang.IllegalStateException
 import java.lang.management.ManagementFactory
 import java.lang.management.MemoryUsage
 import java.time.ZoneId
@@ -172,34 +171,34 @@ public object BuiltInCommands {
             login(); this
         }.onFailure { close() }.getOrThrow()
 
+        private suspend fun getPassword(id: Long): Any? {
+            val acc = AutoLoginConfig.accounts.firstOrNull { it.account == id.toString() }
+            if (acc == null) {
+                sendMessage("Could not find '$id' in AutoLogin config. Please specify password.")
+                return null
+            }
+            return if (acc.password.kind == MD5) acc.password.value.toByteArray() else acc.password.value
+        }
+
+
         @Handler
         @JvmOverloads
         public suspend fun CommandSender.handle(
             @Name("qq") id: Long,
-            pwd: String? = null,
+            password: String? = null,
             protocol: BotConfiguration.MiraiProtocol? = null,
         ) {
-            val password:Any = pwd ?: let a@{
-                AutoLoginConfig.accounts.firstOrNull { it.account == id.toString() }.let {
-                    if(it == null){
-                        //Err: account record no found
-                        sendMessage("account record no found")
-                        return
-                    }
-                    return@a if(it.password.kind == MD5) it.password.value.toByteArray() else it.password.value
-                }
-            }
+            val pwd: Any = password ?: (getPassword(id) ?: return)
             kotlin.runCatching {
-                // Need check already login?
                 when {
-                    (password is String) ->
-                        MiraiConsole.addBot(id, password) {
+                    pwd is String ->
+                        MiraiConsole.addBot(id, pwd) {
                             if (protocol != null) {
                                 this.protocol = protocol
                             }
                         }.doLogin()
-                    (password is ByteArray) ->
-                        MiraiConsole.addBot(id, password) {
+                    pwd is ByteArray ->
+                        MiraiConsole.addBot(id, pwd) {
                             if (protocol != null) {
                                 this.protocol = protocol
                             }
