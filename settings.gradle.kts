@@ -6,13 +6,11 @@
  *
  *  https://github.com/mamoe/mirai/blob/master/LICENSE
  */
-import org.gradle.api.JavaVersion
 
 pluginManagement {
     repositories {
         mavenLocal()
         gradlePluginPortal()
-        jcenter()
         mavenCentral()
     }
 }
@@ -30,9 +28,9 @@ includeProject(":mirai-console-compiler-annotations", "tools/compiler-annotation
 includeProject(":mirai-console", "backend/mirai-console")
 includeProject(":mirai-console.codegen", "backend/codegen")
 includeProject(":mirai-console-terminal", "frontend/mirai-console-terminal")
-includeProject(":mirai-console-compiler-common", "tools/compiler-common")
-includeProject(":mirai-console-intellij", "tools/intellij-plugin")
-includeProject(":mirai-console-gradle", "tools/gradle-plugin")
+//includeProject(":mirai-console-compiler-common", "tools/compiler-common")
+//includeProject(":mirai-console-intellij", "tools/intellij-plugin")
+//includeProject(":mirai-console-gradle", "tools/gradle-plugin")
 
 @Suppress("ConstantConditionIf")
 if (!disableOldFrontEnds) {
