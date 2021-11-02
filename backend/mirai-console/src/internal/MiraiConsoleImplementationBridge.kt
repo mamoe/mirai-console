@@ -218,10 +218,7 @@ internal object MiraiConsoleImplementationBridge : CoroutineScope, MiraiConsoleI
             runBlocking {
                 val accounts = AutoLoginConfig.accounts.toList()
                 for (account in accounts.filter {
-                    it.configuration.getOrDefault(
-                        ConfigurationKey.enable,
-                        true
-                    ) == true
+                    it.configuration[ConfigurationKey.enable]?.equals(true) ?: true
                 }) {
                     val id = kotlin.runCatching {
                         account.account.toLong()

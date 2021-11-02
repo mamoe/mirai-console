@@ -54,7 +54,9 @@ public object AutoLoginConfig : AutoSavePluginConfig("AutoLogin") {
         public enum class ConfigurationKey {
             protocol,
             device,
-            enable;
+            enable,
+
+            ;
 
             public object Parser : CommandValueArgumentParser<ConfigurationKey>,
                 InternalCommandValueArgumentParserExtensions<ConfigurationKey>() {
