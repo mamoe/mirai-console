@@ -15,7 +15,6 @@ import kotlinx.coroutines.sync.withLock
 import net.mamoe.mirai.Bot
 import net.mamoe.mirai.console.MiraiConsole
 import net.mamoe.mirai.console.command.CommandManager.INSTANCE.register
-import net.mamoe.mirai.console.command.ConsoleCommandSender.sendMessage
 import net.mamoe.mirai.console.command.descriptor.CommandArgumentParserException
 import net.mamoe.mirai.console.command.descriptor.CommandValueArgumentParser.Companion.map
 import net.mamoe.mirai.console.command.descriptor.PermissionIdValueArgumentParser
@@ -170,20 +169,6 @@ public object BuiltInCommands {
         private suspend fun Bot.doLogin() = kotlin.runCatching {
             login(); this
         }.onFailure { close() }.getOrThrow()
-        private fun BotConfiguration.setup(protocol:BotConfiguration.MiraiProtocol?):BotConfiguration{
-            if(protocol != null) this.protocol = protocol
-            return this
-        }
-
-        private suspend fun getPassword(id: Long): Any? {
-            val acc = AutoLoginConfig.accounts.firstOrNull { it.account == id.toString() }
-            if (acc == null) {
-                sendMessage("Could not find '$id' in AutoLogin config. Please specify password.")
-                return null
-            }
-            return if (acc.password.kind == MD5) acc.password.value.toByteArray() else acc.password.value
-        }
-
 
         @Handler
         @JvmOverloads
@@ -192,18 +177,26 @@ public object BuiltInCommands {
             password: String? = null,
             protocol: BotConfiguration.MiraiProtocol? = null,
         ) {
+            fun BotConfiguration.setup(protocol: BotConfiguration.MiraiProtocol?): BotConfiguration {
+                if (protocol != null) this.protocol = protocol
+                return this
+            }
+
+            suspend fun getPassword(id: Long): Any? {
+                val acc = AutoLoginConfig.accounts.firstOrNull { it.account == id.toString() }
+                if (acc == null) {
+                    ConsoleCommandSender.sendMessage("Could not find '$id' in AutoLogin config. Please specify password.")
+                    return null
+                }
+                return if (acc.password.kind == MD5) acc.password.value.toByteArray() else acc.password.value
+            }
+
             val pwd: Any = password ?: (getPassword(id) ?: return)
             kotlin.runCatching {
-                when {
-                    pwd is String ->
-                        MiraiConsole.addBot(id, pwd) {
-                            setup(protocol)
-                        }.doLogin()
-                    pwd is ByteArray ->
-                        MiraiConsole.addBot(id, pwd) {
-                            setup(protocol)
-                        }.doLogin()
-                    else -> throw IllegalStateException()// Unreachable
+                when (pwd) {
+                    is String -> MiraiConsole.addBot(id, pwd) { setup(protocol) }.doLogin()
+                    is ByteArray -> MiraiConsole.addBot(id, pwd) { setup(protocol) }.doLogin()
+                    else -> throw AssertionError("Assertion failed, please report to https://github.com/mamoe/mirai-console/issues/new/choose, debug=${pwd.javaClass}")// Unreachable
                 }
             }.fold(
                 onSuccess = { scopeWith(ConsoleCommandSender).sendMessage("${it.nick} ($id) Login successful") },
