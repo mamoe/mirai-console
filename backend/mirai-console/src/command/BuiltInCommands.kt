@@ -161,6 +161,23 @@ public object BuiltInCommands {
         }
     }
 
+    public object LogoutCommand : SimpleCommand(
+        ConsoleCommandOwner, "logout", "登出",
+        description = "登出一个账号",
+    ), BuiltInCommandInternal {
+        @Handler
+        @JvmOverloads
+        public suspend fun CommandSender.handle(
+            @Name("qq") id: Long
+        ){
+            try {
+                Bot.getInstance(id).close()
+            }catch(e : NoSuchElementException){
+                ConsoleCommandSender.sendMessage("Could not find bot with '$id' in login bot instances")
+            }
+        }
+    }
+
     public object LoginCommand : SimpleCommand(
         ConsoleCommandOwner, "login", "登录",
         description = "登录一个账号",
