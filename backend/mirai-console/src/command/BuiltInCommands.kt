@@ -165,16 +165,12 @@ public object BuiltInCommands {
         ConsoleCommandOwner, "logout", "登出",
         description = "登出一个账号",
     ), BuiltInCommandInternal {
+
         @Handler
-        @JvmOverloads
         public suspend fun CommandSender.handle(
             @Name("qq") id: Long
         ){
-            try {
-                Bot.getInstance(id).close()
-            }catch(e : NoSuchElementException){
-                ConsoleCommandSender.sendMessage("Could not find bot with '$id' in login bot instances")
-            }
+            Bot.getInstanceOrNull(id)?.close() ?: scopeWith(ConsoleCommandSender).sendMessage("bot($id) not logged in")
         }
     }
 
