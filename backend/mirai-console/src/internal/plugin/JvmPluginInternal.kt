@@ -30,6 +30,7 @@ import net.mamoe.mirai.console.util.NamedSupervisorJob
 import net.mamoe.mirai.utils.MiraiLogger
 import java.io.File
 import java.io.InputStream
+import java.nio.file.Files
 import java.nio.file.Path
 import java.util.concurrent.locks.ReentrantLock
 import kotlin.coroutines.CoroutineContext
@@ -68,7 +69,16 @@ internal abstract class JvmPluginInternal(
     private var firstRun = true
 
     final override val dataFolderPath: Path by lazy {
-        PluginManager.pluginsDataPath.resolve(description.name).apply { mkdir() }
+        if (Files.exists(PluginManager.pluginsDataPath.resolve(description.name))) {
+            kotlin.runCatching {
+                PluginManager.pluginsDataPath.resolve(description.name).toFile()
+                    .copyRecursively(PluginManager.pluginsDataPath.resolve(description.id).toFile(), true)
+            }.onFailure {
+                PluginManager.pluginsDataPath.resolve(description.name).apply { mkdir() }
+            }
+            PluginManager.pluginsDataPath.resolve(description.name).toFile().deleteRecursively()
+        }
+        PluginManager.pluginsDataPath.resolve(description.id).apply { mkdir() }
     }
 
     final override val dataFolder: File by lazy {
