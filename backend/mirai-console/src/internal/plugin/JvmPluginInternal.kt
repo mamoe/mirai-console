@@ -71,12 +71,13 @@ internal abstract class JvmPluginInternal(
     final override val dataFolderPath: Path by lazy {
         if (Files.exists(PluginManager.pluginsDataPath.resolve(description.name))) {
             kotlin.runCatching {
-                PluginManager.pluginsDataPath.resolve(description.name).toFile()
-                    .copyRecursively(PluginManager.pluginsDataPath.resolve(description.id).toFile(), true)
+                if (!PluginManager.pluginsDataPath.resolve(description.name).toFile()
+                        .renameTo(PluginManager.pluginsDataPath.resolve(description.id).toFile())
+                )
+                    return@lazy PluginManager.pluginsDataPath.resolve(description.name)
             }.onFailure {
-                PluginManager.pluginsDataPath.resolve(description.name).apply { mkdir() }
+                return@lazy PluginManager.pluginsDataPath.resolve(description.name)
             }
-            PluginManager.pluginsDataPath.resolve(description.name).toFile().deleteRecursively()
         }
         PluginManager.pluginsDataPath.resolve(description.id).apply { mkdir() }
     }
