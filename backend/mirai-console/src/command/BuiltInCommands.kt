@@ -171,9 +171,9 @@ public object BuiltInCommands {
             @Name("qq") id: Long
         ){
             if (Bot.getInstanceOrNull(id)?.close() == null) {
-                scopeWith(ConsoleCommandSender).sendMessage("$id 未登录")
+                sendMessage("$id 未登录")
             } else {
-                scopeWith(ConsoleCommandSender).sendMessage("$id 已登出")
+                sendMessage("$id 已登出")
             }
         }
     }
