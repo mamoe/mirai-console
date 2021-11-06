@@ -170,7 +170,11 @@ public object BuiltInCommands {
         public suspend fun CommandSender.handle(
             @Name("qq") id: Long
         ){
-            Bot.getInstanceOrNull(id)?.close() ?: sendMessage("bot($id) not logged in")
+            if (Bot.getInstanceOrNull(id)?.close() == null) {
+                scopeWith(ConsoleCommandSender).sendMessage("$id 未登录")
+            } else {
+                scopeWith(ConsoleCommandSender).sendMessage("$id 已登出")
+            }
         }
     }
 
