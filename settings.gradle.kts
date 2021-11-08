@@ -6,6 +6,7 @@
  *
  *  https://github.com/mamoe/mirai/blob/master/LICENSE
  */
+import org.gradle.api.JavaVersion
 
 pluginManagement {
     repositories {
