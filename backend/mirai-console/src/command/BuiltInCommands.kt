@@ -185,13 +185,13 @@ public object BuiltInCommands {
             suspend fun getPassword(id: Long): Any? {
                 val acc = AutoLoginConfig.accounts.firstOrNull { it.account == id.toString() }
                 if (acc == null) {
-                    ConsoleCommandSender.sendMessage("Could not find '$id' in AutoLogin config. Please specify password.")
+                    sendMessage("Could not find '$id' in AutoLogin config. Please specify password.")
                     return null
                 }
                 return if (acc.password.kind == MD5) acc.password.value.toByteArray() else acc.password.value
             }
 
-            val pwd: Any = password ?: (getPassword(id) ?: return)
+            val pwd: Any = password ?: getPassword(id) ?: return
             kotlin.runCatching {
                 when (pwd) {
                     is String -> MiraiConsole.addBot(id, pwd) { setup(protocol) }.doLogin()
