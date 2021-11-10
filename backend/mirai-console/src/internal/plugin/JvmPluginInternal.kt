@@ -30,7 +30,6 @@ import net.mamoe.mirai.console.util.NamedSupervisorJob
 import net.mamoe.mirai.utils.MiraiLogger
 import java.io.File
 import java.io.InputStream
-import java.nio.file.Files
 import java.nio.file.Path
 import java.util.concurrent.locks.ReentrantLock
 import kotlin.coroutines.CoroutineContext
@@ -69,17 +68,27 @@ internal abstract class JvmPluginInternal(
     private var firstRun = true
 
     final override val dataFolderPath: Path by lazy {
-        if (Files.exists(PluginManager.pluginsDataPath.resolve(description.name))) {
-            kotlin.runCatching {
-                if (!PluginManager.pluginsDataPath.resolve(description.name).toFile()
-                        .renameTo(PluginManager.pluginsDataPath.resolve(description.id).toFile())
+        if (PluginManager.pluginsDataPath.resolve(description.name).toFile().exists()) {
+            // need move
+            if (PluginManager.pluginsDataPath.resolve(description.id).toFile().exists()) {
+                logger.error(
+                    "配置文件夹(${
+                        PluginManager.pluginsDataPath.resolve(description.id).toFile().absolutePath
+                    })被占用, mcl将自动关闭请于下次启动前删除该文件夹"
                 )
-                    return@lazy PluginManager.pluginsDataPath.resolve(description.name)
-            }.onFailure {
-                return@lazy PluginManager.pluginsDataPath.resolve(description.name)
+                MiraiConsole.job.cancel()
             }
-        }
-        PluginManager.pluginsDataPath.resolve(description.id).apply { mkdir() }
+            kotlin.runCatching {
+                PluginManager.pluginsDataPath.resolve(description.name).toFile().renameTo(
+                    PluginManager.pluginsDataPath.resolve(description.id).toFile()
+                )
+            }.onFailure {
+                logger.error(it)
+                MiraiConsole.job.cancel()
+            }
+            PluginManager.pluginsDataPath.resolve(description.id)
+        } else
+            PluginManager.pluginsDataPath.resolve(description.id).apply { mkdir() }
     }
 
     final override val dataFolder: File by lazy {
