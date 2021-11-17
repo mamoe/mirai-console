@@ -30,7 +30,12 @@ import net.mamoe.mirai.console.internal.data.builtins.AutoLoginConfig.Account.*
 import net.mamoe.mirai.console.internal.data.builtins.AutoLoginConfig.Account.PasswordKind.MD5
 import net.mamoe.mirai.console.internal.data.builtins.AutoLoginConfig.Account.PasswordKind.PLAIN
 import net.mamoe.mirai.console.internal.permission.BuiltInPermissionService
+import net.mamoe.mirai.console.internal.plugin.BuiltInJvmPluginLoaderImpl
+import net.mamoe.mirai.console.internal.plugin.ExportManagerImpl
+import net.mamoe.mirai.console.internal.plugin.JvmPluginClassLoader
 import net.mamoe.mirai.console.internal.plugin.PluginManagerImpl
+import net.mamoe.mirai.console.internal.util.PluginServiceHelper.findServices
+import net.mamoe.mirai.console.internal.util.PluginServiceHelper.loadAllServices
 import net.mamoe.mirai.console.internal.util.runIgnoreException
 import net.mamoe.mirai.console.permission.Permission
 import net.mamoe.mirai.console.permission.Permission.Companion.parentsWithSelf
@@ -41,6 +46,9 @@ import net.mamoe.mirai.console.permission.PermissionService.Companion.getPermitt
 import net.mamoe.mirai.console.permission.PermissionService.Companion.hasPermission
 import net.mamoe.mirai.console.permission.PermissionService.Companion.permit
 import net.mamoe.mirai.console.permission.PermitteeId
+import net.mamoe.mirai.console.plugin.PluginManager.INSTANCE.enable
+import net.mamoe.mirai.console.plugin.PluginManager.INSTANCE.load
+import net.mamoe.mirai.console.plugin.jvm.*
 import net.mamoe.mirai.console.plugin.name
 import net.mamoe.mirai.console.plugin.version
 import net.mamoe.mirai.console.util.*
@@ -49,6 +57,7 @@ import net.mamoe.mirai.message.nextMessageOrNull
 import net.mamoe.mirai.utils.BotConfiguration
 import net.mamoe.mirai.utils.MiraiLogger
 import net.mamoe.mirai.utils.secondsToMillis
+import java.io.File
 import java.lang.management.ManagementFactory
 import java.lang.management.MemoryUsage
 import java.time.ZoneId
@@ -223,6 +232,59 @@ public object BuiltInCommands {
                     throw throwable
                 }
             )
+        }
+    }
+
+
+    public object LoadPluginCommand : SimpleCommand(
+        ConsoleCommandOwner, "loadPlugin", "加载插件",
+        description = "加载一个新插件",
+    ), BuiltInCommandInternal {
+
+        private fun loadAndEnablePlugin(f: File): JvmPlugin {
+            val pluginClassLoader = JvmPluginClassLoader(
+                f,
+                MiraiConsole::class.java.classLoader,
+                BuiltInJvmPluginLoaderImpl.classLoaders
+            )
+            BuiltInJvmPluginLoaderImpl.classLoaders.add(pluginClassLoader)
+            val exportManagers = pluginClassLoader.findServices(
+                ExportManager::class
+            ).loadAllServices()
+            if (exportManagers.isEmpty()) {
+                val rules = pluginClassLoader.getResourceAsStream("export-rules.txt")
+                if (rules == null)
+                    pluginClassLoader.declaredFilter = StandardExportManagers.AllExported
+                else rules.bufferedReader(Charsets.UTF_8).useLines {
+                    pluginClassLoader.declaredFilter = ExportManagerImpl.parse(it.iterator())
+                }
+            } else {
+                pluginClassLoader.declaredFilter = exportManagers[0]
+            }
+            return pluginClassLoader.findServices(
+                JvmPlugin::class,
+                KotlinPlugin::class,
+                JavaPlugin::class
+            ).loadAllServices()[0]
+        }
+
+        @Handler
+        @JvmOverloads
+        public suspend fun CommandSender.handle(
+            path: String
+        ) {
+            val f = File(path)
+            if (!f.isFile || !f.exists())
+                sendMessage("${f.absolutePath} is not a vaild file path")
+            else
+                sendMessage("Successful load and enable ${
+                    loadAndEnablePlugin(f).let {
+                        it.load()
+                        it.enable()
+                        it.description.name
+                    }
+                }"
+                )
         }
     }
 
