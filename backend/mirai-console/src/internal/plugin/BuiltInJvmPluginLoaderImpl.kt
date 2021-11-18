@@ -17,6 +17,7 @@ import net.mamoe.mirai.console.data.PluginDataStorage
 import net.mamoe.mirai.console.internal.MiraiConsoleImplementationBridge
 import net.mamoe.mirai.console.internal.util.PluginServiceHelper.findServices
 import net.mamoe.mirai.console.internal.util.PluginServiceHelper.loadAllServices
+import net.mamoe.mirai.console.plugin.PluginManager
 import net.mamoe.mirai.console.plugin.jvm.*
 import net.mamoe.mirai.console.plugin.loader.AbstractFilePluginLoader
 import net.mamoe.mirai.console.plugin.loader.PluginLoadException
@@ -110,6 +111,25 @@ internal object BuiltInJvmPluginLoaderImpl :
             plugin.internalOnLoad()
         }.getOrElse {
             throw PluginLoadException("Exception while loading ${plugin.description.smartToString()}", it)
+        }
+        if (PluginManager.pluginsDataPath.resolve(plugin.description.name).toFile().exists()) {
+            // need move
+            if (PluginManager.pluginsDataPath.resolve(plugin.description.id).toFile().exists()) {
+                logger.error(
+                    "配置文件夹(${
+                        PluginManager.pluginsDataPath.resolve(plugin.description.id).toFile().absolutePath
+                    })被占用, mcl将自动关闭请于下次启动前删除该文件夹"
+                )
+                MiraiConsole.job.cancel()
+            }
+            kotlin.runCatching {
+                PluginManager.pluginsDataPath.resolve(plugin.description.name).toFile().renameTo(
+                    PluginManager.pluginsDataPath.resolve(plugin.description.id).toFile()
+                )
+            }.onFailure {
+                logger.error(it)
+                MiraiConsole.job.cancel()
+            }
         }
     }
 

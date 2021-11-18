@@ -68,27 +68,7 @@ internal abstract class JvmPluginInternal(
     private var firstRun = true
 
     final override val dataFolderPath: Path by lazy {
-        if (PluginManager.pluginsDataPath.resolve(description.name).toFile().exists()) {
-            // need move
-            if (PluginManager.pluginsDataPath.resolve(description.id).toFile().exists()) {
-                logger.error(
-                    "配置文件夹(${
-                        PluginManager.pluginsDataPath.resolve(description.id).toFile().absolutePath
-                    })被占用, mcl将自动关闭请于下次启动前删除该文件夹"
-                )
-                MiraiConsole.job.cancel()
-            }
-            kotlin.runCatching {
-                PluginManager.pluginsDataPath.resolve(description.name).toFile().renameTo(
-                    PluginManager.pluginsDataPath.resolve(description.id).toFile()
-                )
-            }.onFailure {
-                logger.error(it)
-                MiraiConsole.job.cancel()
-            }
-            PluginManager.pluginsDataPath.resolve(description.id)
-        } else
-            PluginManager.pluginsDataPath.resolve(description.id).apply { mkdir() }
+        PluginManager.pluginsDataPath.resolve(description.id).apply { mkdir() }
     }
 
     final override val dataFolder: File by lazy {
