@@ -116,7 +116,7 @@ internal object BuiltInJvmPluginLoaderImpl :
             // need move
             if (PluginManager.pluginsDataPath.resolve(plugin.description.id).toFile().exists()) {
                 logger.error(
-                    "配置文件夹(${
+                    "配置目录(${
                         PluginManager.pluginsDataPath.resolve(plugin.description.id).toFile().absolutePath
                     })被占用, Mirai Console 将自动关闭, 请删除或移动该目录后再启动"
                 )
