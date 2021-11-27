@@ -118,7 +118,7 @@ internal object BuiltInJvmPluginLoaderImpl :
                 logger.error(
                     "配置文件夹(${
                         PluginManager.pluginsDataPath.resolve(plugin.description.id).toFile().absolutePath
-                    })被占用, mcl将自动关闭请于下次启动前删除该文件夹"
+                    })被占用, Mirai Console 将自动关闭, 请删除或移动该目录后再启动"
                 )
                 MiraiConsole.job.cancel()
             }
