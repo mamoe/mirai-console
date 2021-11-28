@@ -126,7 +126,7 @@ internal object BuiltInJvmPluginLoaderImpl :
                 logger.info("移动 ${plugin.description.name} 的配置目录(${nameFolder.absolutePath})到 ${idFolder.absolutePath}")
                 nameFolder.renameTo(idFolder)
             }.onFailure {
-                logger.error("移动配置目录失败, Mirai Console 将自动关闭\n$it")
+                logger.error("移动配置目录失败, Mirai Console 将自动关闭\n", it)
                 MiraiConsole.job.cancel()
             }
         }
