@@ -17,7 +17,7 @@ class PluginMovingTests : AbstractConsoleTest() {
         object : KotlinPlugin(JvmPluginDescription("org.test2.test2", "1.0.0", "test2")) {}
 
     @Test
-    fun `plugin with same name and id`() {
+    fun movingPluginPath() {
         PluginManager.pluginsDataPath.resolve(mockPlugin.name).mkdir()
         mockPlugin.load()
         assert(!MiraiConsole.job.isCancelled)
@@ -28,5 +28,6 @@ class PluginMovingTests : AbstractConsoleTest() {
         PluginManager.pluginsDataPath.resolve(mockPluginWithName2.id).mkdir()
         mockPluginWithName2.load()
         assert(MiraiConsole.job.isCancelled)
+        exceptCancel = false
     }
 }
