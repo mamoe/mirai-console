@@ -113,7 +113,7 @@ internal object BuiltInJvmPluginLoaderImpl :
             throw PluginLoadException("Exception while loading ${plugin.description.smartToString()}", it)
         }
         val nameFolder = PluginManager.pluginsDataPath.resolve(plugin.description.name).toFile()
-        if (nameFolder.exists()) {
+        if (plugin.description.name != plugin.description.id && nameFolder.exists()) {
             // need move
             val idFolder = PluginManager.pluginsDataPath.resolve(plugin.description.id).toFile()
             val moveDescription = "移动 ${plugin.description.smartToString()} 的配置目录(${nameFolder.path})到 ${idFolder.path}"
