@@ -117,10 +117,13 @@ internal object BuiltInJvmPluginLoaderImpl :
             // need move
             val idFolder = PluginManager.pluginsDataPath.resolve(plugin.description.id).toFile()
             val moveDescription = "移动 ${plugin.description.smartToString()} 的配置目录(${nameFolder.path})到 ${idFolder.path}"
-            if (idFolder.exists() && idFolder.listFiles()?.size != 0) {
-                logger.error("$moveDescription 失败, 原因:配置目录(${idFolder.path})被占用")
-                logger.error("Mirai Console 将自动关闭, 请删除或移动该目录后再启动")
-                MiraiConsole.job.cancel()
+            if (idFolder.exists()) {
+                if (idFolder.listFiles()?.size != 0) {
+                    logger.error("$moveDescription 失败, 原因:配置目录(${idFolder.path})被占用")
+                    logger.error("Mirai Console 将自动关闭, 请删除或移动该目录后再启动")
+                    MiraiConsole.job.cancel()
+                } else
+                    idFolder.delete()
             }
             kotlin.runCatching {
                 logger.info(moveDescription)

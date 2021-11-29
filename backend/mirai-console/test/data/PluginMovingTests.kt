@@ -15,18 +15,31 @@ class PluginMovingTests : AbstractConsoleTest() {
     private val mockPluginWithName = object : KotlinPlugin(JvmPluginDescription("org.test1.test1", "1.0.0", "test1")) {}
     private val mockPluginWithName2 =
         object : KotlinPlugin(JvmPluginDescription("org.test2.test2", "1.0.0", "test2")) {}
+    private val mockPluginWithName3 =
+        object : KotlinPlugin(JvmPluginDescription("org.test2.test3", "1.0.0", "test3")) {}
+
+    private fun mkdir(abstractPath: String) = PluginManager.pluginsDataPath.resolve(abstractPath).mkdir()
 
     @Test
     fun movingPluginPath() {
-        PluginManager.pluginsDataPath.resolve(mockPlugin.name).mkdir()
+        // Normal move
+        mkdir(mockPlugin.name)
         mockPlugin.load()
         assert(!MiraiConsole.job.isCancelled)
-        PluginManager.pluginsDataPath.resolve(mockPluginWithName.name).mkdir()
+        // when id == name
+        mkdir(mockPluginWithName.name)
         mockPluginWithName.load()
         assert(!MiraiConsole.job.isCancelled)
-        PluginManager.pluginsDataPath.resolve(mockPluginWithName2.name).mkdir()
-        PluginManager.pluginsDataPath.resolve(mockPluginWithName2.id).mkdir()
+        // move to empty folder
+        mkdir(mockPluginWithName2.name)
+        mkdir(mockPluginWithName2.id)
         mockPluginWithName2.load()
+        assert(!MiraiConsole.job.isCancelled)
+        // fail move
+        mkdir(mockPluginWithName3.name)
+        mkdir(mockPluginWithName3.id)
+        PluginManager.pluginsDataPath.resolve(mockPluginWithName3.id).toFile().resolve("x").createNewFile()
+        mockPluginWithName3.load()
         assert(MiraiConsole.job.isCancelled)
         exceptCancel = false
     }
