@@ -112,21 +112,26 @@ internal object BuiltInJvmPluginLoaderImpl :
         }.getOrElse {
             throw PluginLoadException("Exception while loading ${plugin.description.smartToString()}", it)
         }
-        val idFolder = PluginManager.pluginsDataPath.resolve(plugin.description.id).toFile()
         val nameFolder = PluginManager.pluginsDataPath.resolve(plugin.description.name).toFile()
         if (nameFolder.exists()) {
             // need move
-            if (idFolder.exists()) {
-                logger.error(
-                    "配置目录(${idFolder.absolutePath})被占用, Mirai Console 将自动关闭, 请删除或移动该目录后再启动"
-                )
+            val idFolder = PluginManager.pluginsDataPath.resolve(plugin.description.id).toFile()
+            val moveDescription = "移动 ${plugin.description.smartToString()} 的配置目录(${nameFolder.path})到 ${idFolder.path}"
+            if (idFolder.exists() && idFolder.listFiles()?.size != 0) {
+                logger.error("$moveDescription 失败, 原因:配置目录(${idFolder.path})被占用")
+                logger.error("Mirai Console 将自动关闭, 请删除或移动该目录后再启动")
                 MiraiConsole.job.cancel()
             }
             kotlin.runCatching {
-                logger.info("移动 ${plugin.description.name} 的配置目录(${nameFolder.absolutePath})到 ${idFolder.absolutePath}")
-                nameFolder.renameTo(idFolder)
+                logger.info(moveDescription)
+                if (!nameFolder.renameTo(idFolder)) {
+                    logger.error("$moveDescription 失败")
+                    logger.error("Mirai Console 将自动关闭, 请手动移动该文件夹后再启动")
+                    MiraiConsole.job.cancel()
+                }
             }.onFailure {
-                logger.error("移动配置目录失败, Mirai Console 将自动关闭\n", it)
+                logger.error("$moveDescription 失败, 原因:\n", it)
+                logger.error("Mirai Console 将自动关闭, 请解决该错误后再启动")
                 MiraiConsole.job.cancel()
             }
         }
