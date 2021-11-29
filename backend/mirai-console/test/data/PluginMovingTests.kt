@@ -12,27 +12,21 @@ import net.mamoe.mirai.console.plugin.name
 import org.junit.jupiter.api.Test
 
 class PluginMovingTests : AbstractConsoleTest() {
-    private val mockPluginWithName = object : KotlinPlugin(JvmPluginDescription("org.test.test", "1.0.0", "test")) {}
+    private val mockPluginWithName = object : KotlinPlugin(JvmPluginDescription("org.test1.test1", "1.0.0", "test1")) {}
+    private val mockPluginWithName2 =
+        object : KotlinPlugin(JvmPluginDescription("org.test2.test2", "1.0.0", "test2")) {}
 
     @Test
     fun `plugin with same name and id`() {
         PluginManager.pluginsDataPath.resolve(mockPlugin.name).mkdir()
         mockPlugin.load()
         assert(!MiraiConsole.job.isCancelled)
-    }
-
-    @Test
-    fun normalMove() {
         PluginManager.pluginsDataPath.resolve(mockPluginWithName.name).mkdir()
         mockPluginWithName.load()
         assert(!MiraiConsole.job.isCancelled)
-    }
-
-    @Test
-    fun `plugin id path occupied`() {
-        PluginManager.pluginsDataPath.resolve(mockPluginWithName.name).mkdir()
-        PluginManager.pluginsDataPath.resolve(mockPluginWithName.id).mkdir()
-        mockPluginWithName.load()
+        PluginManager.pluginsDataPath.resolve(mockPluginWithName2.name).mkdir()
+        PluginManager.pluginsDataPath.resolve(mockPluginWithName2.id).mkdir()
+        mockPluginWithName2.load()
         assert(MiraiConsole.job.isCancelled)
     }
 }
