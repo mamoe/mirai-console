@@ -248,19 +248,19 @@ public object BuiltInCommands {
                 BuiltInJvmPluginLoaderImpl.classLoaders
             )
             BuiltInJvmPluginLoaderImpl.classLoaders.add(pluginClassLoader)
+            // 这里的exportManager应该是有必要的? 可能被再后面加载的插件调用?
             val exportManagers = pluginClassLoader.findServices(
                 ExportManager::class
             ).loadAllServices()
-            if (exportManagers.isEmpty()) {
-                val rules = pluginClassLoader.getResourceAsStream("export-rules.txt")
-                if (rules == null)
-                    pluginClassLoader.declaredFilter = StandardExportManagers.AllExported
-                else rules.bufferedReader(Charsets.UTF_8).useLines {
-                    pluginClassLoader.declaredFilter = ExportManagerImpl.parse(it.iterator())
-                }
-            } else {
-                pluginClassLoader.declaredFilter = exportManagers[0]
-            }
+            pluginClassLoader.declaredFilter =
+                if (exportManagers.isEmpty()) {
+                    pluginClassLoader.getResourceAsStream("export-rules.txt")
+                        ?.bufferedReader(Charsets.UTF_8)
+                        ?.useLines {
+                            ExportManagerImpl.parse(it.iterator())
+                        } ?: StandardExportManagers.AllExported
+                } else
+                    exportManagers[0]
             return pluginClassLoader.findServices(
                 JvmPlugin::class,
                 KotlinPlugin::class,
@@ -272,23 +272,19 @@ public object BuiltInCommands {
         public suspend fun ConsoleCommandSender.handle(
             path: String
         ) {
+            // 因为是Console环境下, 所以用mainLogger是合理的?
             MiraiConsole.mainLogger.warning("正在尝试执行危险操作(热加载新插件), 可能导致预料之外的异常, 是否继续执行?(Y/N)")
             val a = MiraiConsole.requestInput("")
             if (a != "Y" && a != "y")
                 return
             val f = File(path)
             if (!f.isFile || !f.exists())
-                sendMessage("${f.absolutePath} is not a valid file path")
+                MiraiConsole.mainLogger.error("${f.absolutePath} is not a valid file path")
             else
-                sendMessage(
-                    "Successful load and enable ${
-                        loadAndEnablePlugin(f).let {
-                            it.load()
-                            it.enable()
-                            it.description.name
-                        }
-                }"
-                )
+                loadAndEnablePlugin(f).let {
+                    it.load()
+                    it.enable()
+                }
         }
     }
 
