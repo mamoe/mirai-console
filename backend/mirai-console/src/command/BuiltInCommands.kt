@@ -237,8 +237,8 @@ public object BuiltInCommands {
 
 
     public object LoadPluginCommand : SimpleCommand(
-        ConsoleCommandOwner, "loadPlugin", "加载插件",
-        description = "加载一个新插件",
+        ConsoleCommandOwner, "loadPlugin", "热加载插件",
+        description = "热加载一个新插件",
     ), BuiltInCommandInternal {
 
         private fun loadAndEnablePlugin(f: File): JvmPlugin {
@@ -269,20 +269,24 @@ public object BuiltInCommands {
         }
 
         @Handler
-        @JvmOverloads
-        public suspend fun CommandSender.handle(
+        public suspend fun ConsoleCommandSender.handle(
             path: String
         ) {
+            MiraiConsole.mainLogger.warning("正在尝试执行危险操作(热加载新插件), 可能导致预料之外的异常, 是否继续执行?(Y/N)")
+            val a = MiraiConsole.requestInput("")
+            if (a != "Y" && a != "y")
+                return
             val f = File(path)
             if (!f.isFile || !f.exists())
-                sendMessage("${f.absolutePath} is not a vaild file path")
+                sendMessage("${f.absolutePath} is not a valid file path")
             else
-                sendMessage("Successful load and enable ${
-                    loadAndEnablePlugin(f).let {
-                        it.load()
-                        it.enable()
-                        it.description.name
-                    }
+                sendMessage(
+                    "Successful load and enable ${
+                        loadAndEnablePlugin(f).let {
+                            it.load()
+                            it.enable()
+                            it.description.name
+                        }
                 }"
                 )
         }
