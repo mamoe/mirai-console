@@ -41,6 +41,6 @@ class PluginMovingTests : AbstractConsoleTest() {
         PluginManager.pluginsDataPath.resolve(mockPluginWithName3.id).toFile().resolve("x").createNewFile()
         mockPluginWithName3.load()
         assert(MiraiConsole.job.isCancelled)
-        exceptCancel = false
+        cancelOnFinish = false
     }
 }

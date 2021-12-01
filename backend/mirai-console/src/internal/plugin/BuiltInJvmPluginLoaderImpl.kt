@@ -137,6 +137,7 @@ internal object BuiltInJvmPluginLoaderImpl :
                 logger.error("Mirai Console 将自动关闭, 请解决该错误后再启动")
                 MiraiConsole.job.cancel()
             }
+            logger.info("$moveDescription 完成")
         }
     }
 
