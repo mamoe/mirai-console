@@ -1,0 +1,10 @@
+blank_issues_enabled: false
+
+contact_links:
+  - name: Mirai 主仓库
+    url: https://github.com/mamoe/mirai/issues/new
+    about: 在 mirai 主仓库提交新提交问题或建议
+
+  - name: Mirai Forum
+    url: https://mirai.mamoe.net
+    about: 在论坛与其他用户讨论
