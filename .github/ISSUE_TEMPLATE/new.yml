@@ -1,0 +1,11 @@
+name: mirai-console 已经合并进入 mirai 主仓库. 请在 mirai 主仓库提交问题: https://github.com/mamoe/mirai/issues/new/choose
+description: ""
+labels:
+  - "question"
+
+body:
+  - type: markdown
+    attributes:
+      value: "mirai-console 已经合并进入 mirai 主仓库. 请在 mirai 主仓库提交问题: <https://github.com/mamoe/mirai/issues/new/choose>"
+
+
