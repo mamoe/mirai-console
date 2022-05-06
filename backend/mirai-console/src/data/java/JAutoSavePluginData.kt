@@ -36,7 +36,7 @@ import kotlin.reflect.full.createType
  *          INSTANCE = this;
  *     }
  *     @Override
- *     public onLoad() {
+ *     public void onLoad() {
  *          this.reloadPluginData(MyPluginData.INSTANCE); // 读取文件等
  *     }
  * }
