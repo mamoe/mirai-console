@@ -43,8 +43,7 @@ mirai-console 已经合并到 mirai 主仓库: [mirai](https://github.com/mamoe/
 
 ### 执行指令
 
-在控制台输入 `?` 查看可用指令列表。**
-注意，请先为用户授予执行某些指令的权限，详见 [示例](docs/BuiltInCommands.md#授予一个用户执行所有指令的权限)**。
+在控制台输入 `?` 查看可用指令列表。**注意，请先为用户授予执行某些指令的权限，详见 [示例](docs/BuiltInCommands.md#授予一个用户执行所有指令的权限)**。
 
 ### 内置指令
 
